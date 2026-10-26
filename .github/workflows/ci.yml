@@ -1,9 +1,19 @@
-name: CI
+name: Release
 
-# Runs only when a GitHub release is published.
+# Builds the project and attaches the files to the published GitHub release:
+#   - Android APK (arm64, Android 9+), signed with a release keystore when
+#     ANDROID_KEYSTORE_BASE64/ANDROID_KEYSTORE_PASS secrets are set, otherwise
+#     with the debug keystore
+#   - iOS/iPadOS .ipa, signed when the Apple signing secrets are set
+#     (APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD,
+#     APPLE_PROVISION_PROFILE_BASE64, KEYCHAIN_PASSWORD), otherwise a
+#     simulator build is attached instead
 on:
   release:
     types: [published]
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -21,3 +31,127 @@ jobs:
       - run: go build ./...
       - name: Cross-compile (Windows)
         run: GOOS=windows go build ./...
+
+  android:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0 ndk;27.0.12077973'
+          cache: true
+      - name: Install gogio
+        run: go install gioui.org/cmd/gogio@latest
+      - name: Use the release tag as the app version
+        run: |
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed -E 's/^v//')
+          if echo "$TAG_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
+          fi
+      - name: Point gogio at the Android SDK and NDK
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$SDK/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - name: Detect signing keystore
+        id: signing
+        env:
+          HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: echo "has=$HAS_KEYSTORE" >> "$GITHUB_OUTPUT"
+      - name: Decode signing keystore
+        if: steps.signing.outputs.has == 'true'
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
+      - name: Build APK (debug-signed)
+        if: steps.signing.outputs.has != 'true'
+        run: make android
+      - name: Build APK (release-signed)
+        if: steps.signing.outputs.has == 'true'
+        run: make android SIGNKEY="$RUNNER_TEMP/release.keystore" SIGNPASS="${{ secrets.ANDROID_KEYSTORE_PASS }}"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/pocket-agent.apk
+          if-no-files-found: error
+
+  ios:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Install gogio
+        run: go install gioui.org/cmd/gogio@latest
+      - name: Use the release tag as the app version
+        run: |
+          TAG_VERSION=$(echo "${{ github.ref_name }}" | sed -E 's/^v//')
+          if echo "$TAG_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
+          fi
+      - name: Detect Apple signing
+        id: signing
+        env:
+          HAS_SIGNING: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' && secrets.APPLE_CERTIFICATE_PASSWORD != '' && secrets.APPLE_PROVISION_PROFILE_BASE64 != '' && secrets.KEYCHAIN_PASSWORD != '' }}
+        run: echo "has=$HAS_SIGNING" >> "$GITHUB_OUTPUT"
+      - name: Import signing certificate and profile
+        if: steps.signing.outputs.has == 'true'
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo "${{ secrets.APPLE_CERTIFICATE_BASE64 }}" | base64 --decode > "$CERT_PATH"
+          echo "${{ secrets.APPLE_PROVISION_PROFILE_BASE64 }}" | base64 --decode > "$PROFILE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security import "$CERT_PATH" -k build.keychain -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+      - name: Build iOS/iPadOS .ipa (signed)
+        if: steps.signing.outputs.has == 'true'
+        run: |
+          if [ -n "${{ secrets.APPLE_APPID }}" ]; then
+            make ios SIGNKEY="$RUNNER_TEMP/profile.mobileprovision" APPID="${{ secrets.APPLE_APPID }}"
+          else
+            make ios SIGNKEY="$RUNNER_TEMP/profile.mobileprovision"
+          fi
+      - name: Build iOS simulator app
+        if: steps.signing.outputs.has != 'true'
+        run: make ios-sim
+      - name: Package simulator app
+        if: steps.signing.outputs.has != 'true'
+        run: ditto -c -k --sequesterRsrc --keepParent build/PocketAgent.app build/PocketAgent-simulator.zip
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: |
+            build/PocketAgent.ipa
+            build/PocketAgent-simulator.zip
+          if-no-files-found: warn
+
+  release:
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+      - name: Attach files to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/**/*
