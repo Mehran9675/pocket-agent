@@ -110,10 +110,6 @@ docs/                   building, architecture, Giode feature requests
 
 More in [docs/architecture.md](docs/architecture.md).
 
-## Giode feature requests
-
-Features Pocket Agent needed that Giode doesn't have yet - with the workaround used and a
-proposed API for each - are written up in [docs/giode-requests.md](docs/giode-requests.md).
 
 ## Tests
 
