@@ -1,0 +1,6 @@
+third_party/
+build/
+*.apk
+*.ipa
+*.app
+*.bundle

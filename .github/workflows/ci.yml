@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Gio dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwayland-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+      - run: go vet ./...
+      - run: go vet -tags devmock ./...
+      - run: go test ./...
+      - run: go build ./...
+      - name: Cross-compile (Windows)
+        run: GOOS=windows go build ./...
