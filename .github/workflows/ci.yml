@@ -1,8 +1,9 @@
 name: CI
 
+# Runs only when a GitHub release is published.
 on:
-  push:
-  pull_request:
+  release:
+    types: [published]
 
 jobs:
   test:
