@@ -8,6 +8,11 @@
 #   APPID=...        app ID, when signing needs a different one
 #   KEYSTORE=...     Android release keystore (password in GIODE_KEYSTORE_PASS);
 #                    builds with -release when set
+#   GIO_PATCHES=false  build Android against plain Gio (60fps cap)
+#
+# In GitHub Actions a failed build's output is reported as an error
+# annotation, and a failed Android build is retried once against plain
+# Gio, so a release still gets an APK.
 #
 #   VERSION=1.0.0.3 scripts/giode-build.sh -o build/pocket-agent.apk android
 set -euo pipefail
@@ -16,6 +21,7 @@ cd "$(dirname "$0")/.."
 cp giode.toml giode.toml.orig
 trap 'mv giode.toml.orig giode.toml' EXIT
 
+configure() {
 python3 - <<'PY'
 import os, re
 path = "giode.toml"
@@ -48,9 +54,43 @@ if os.environ.get("PROFILE"):
     put("ios", "profile", q(os.path.abspath(os.environ["PROFILE"])))
 if os.environ.get("KEYSTORE"):
     put("android", "keystore", q(os.path.abspath(os.environ["KEYSTORE"])))
+if os.environ.get("GIO_PATCHES") == "false":
+    put("android", "gio_patches", "false")
 open(path, "w").write("\n".join(lines))
 PY
+}
+configure
 
 RELEASE=()
 [ -n "${KEYSTORE:-}" ] && RELEASE=(-release)
-${GIODE:-giode} build ${RELEASE[@]+"${RELEASE[@]}"} "$@"
+
+LOG=$(mktemp)
+build() {
+	set +e
+	${GIODE:-giode} build ${RELEASE[@]+"${RELEASE[@]}"} "$@" 2>&1 | tee "$LOG"
+	local rc=${PIPESTATUS[0]}
+	set -e
+	return "$rc"
+}
+
+# report puts the end of a failed build's output in an annotation, which
+# GitHub shows on the run's summary (and its API serves without the logs).
+report() { # title
+	[ -n "${GITHUB_ACTIONS:-}" ] || return 0
+	local msg
+	msg=$(tail -n 40 "$LOG" | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+	echo "::error title=$1::$msg"
+}
+
+if build "$@"; then
+	exit 0
+fi
+report "giode build failed"
+if [ -n "${GITHUB_ACTIONS:-}" ] && [[ " $* " == *" android "* ]] && [ "${GIO_PATCHES:-}" != "false" ]; then
+	echo "::warning title=Android frame pacing::Retrying against plain Gio; this APK is capped at 60fps"
+	cp giode.toml.orig giode.toml
+	GIO_PATCHES=false configure
+	build "$@" && exit 0
+	report "giode build failed against plain Gio too"
+fi
+exit 1
