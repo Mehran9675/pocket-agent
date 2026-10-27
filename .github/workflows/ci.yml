@@ -1,14 +1,16 @@
 name: Release
 
 # Builds the project and attaches the files to the published GitHub release:
-# Both mobile builds include the llama.cpp on-device engine.
 #   - Android APK (arm64, Android 9+), signed with a release keystore when
 #     ANDROID_KEYSTORE_BASE64/ANDROID_KEYSTORE_PASS secrets are set, otherwise
 #     with the debug keystore
-#   - iOS/iPadOS .ipa, signed when the Apple signing secrets are set
-#     (APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD,
-#     APPLE_PROVISION_PROFILE_BASE64, KEYCHAIN_PASSWORD), otherwise a
-#     simulator build is attached instead
+#   - the on-device engine for Android (two CPU variants) and Linux, plus
+#     engine-manifest.json, which installed apps check at launch to download
+#     the engine and its updates
+#   - iOS/iPadOS .ipa with the engine compiled in, signed when the Apple
+#     signing secrets are set (APPLE_CERTIFICATE_BASE64,
+#     APPLE_CERTIFICATE_PASSWORD, APPLE_PROVISION_PROFILE_BASE64,
+#     KEYCHAIN_PASSWORD), otherwise a simulator build is attached instead
 on:
   release:
     types: [published]
@@ -33,11 +35,45 @@ jobs:
       - name: Cross-compile (Windows)
         run: GOOS=windows go build ./...
 
+  engine:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: android
+            variant: armv8.2
+          - target: android
+            variant: armv8
+          - target: linux
+            variant: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: android-actions/setup-android@v3
+        if: matrix.target == 'android'
+        with:
+          packages: 'ndk;27.0.12077973'
+      - name: Point the build at the NDK
+        if: matrix.target == 'android'
+        run: echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - name: Cache the engine
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/engine
+          key: engine-${{ matrix.target }}-${{ matrix.variant }}-${{ hashFiles('engine/**', 'scripts/llama-src.sh', 'scripts/build-engine.sh') }}
+      - name: Build the engine
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: scripts/build-engine.sh ${{ matrix.target }} ${{ matrix.variant }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engine-${{ matrix.target }}-${{ matrix.variant }}
+          path: build/engine/libpocketllama-*
+          if-no-files-found: error
+
   android:
     needs: test
     runs-on: ubuntu-latest
-    env:
-      LLAMA: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -64,20 +100,6 @@ jobs:
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_ROOT=$SDK/ndk/27.0.12077973" >> "$GITHUB_ENV"
-      - name: Cache llama.cpp libraries
-        uses: actions/cache@v4
-        with:
-          path: third_party/lib/android_arm64
-          key: llama-android-${{ hashFiles('scripts/build-llama.sh') }}
-      - name: Build the on-device engine (llama.cpp)
-        run: |
-          if [ ! -f third_party/lib/android_arm64/libllama.a ]; then
-            scripts/build-llama.sh android
-          else
-            # cgo still needs the headers.
-            git clone --filter=blob:none https://github.com/ggml-org/llama.cpp third_party/llama.cpp
-            git -C third_party/llama.cpp checkout -q "$(sed -n 's/^LLAMA_COMMIT=${LLAMA_COMMIT:-\(.*\)}$/\1/p' scripts/build-llama.sh)"
-          fi
       - name: Detect signing keystore
         id: signing
         env:
@@ -86,25 +108,20 @@ jobs:
       - name: Decode signing keystore
         if: steps.signing.outputs.has == 'true'
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
-      - name: Build APKs
+      - name: Build APK
         env:
           KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
         run: |
-          SIGN=()
           if [ "${{ steps.signing.outputs.has }}" = "true" ]; then
-            SIGN=(SIGNKEY="$RUNNER_TEMP/release.keystore" SIGNPASS="$KEYSTORE_PASS")
+            make android SIGNKEY="$RUNNER_TEMP/release.keystore" SIGNPASS="$KEYSTORE_PASS"
+          else
+            make android
           fi
-          # Lite: no on-device engine, for older phones.
-          make android LLAMA= "${SIGN[@]}"
-          mv build/pocket-agent.apk build/pocket-agent-lite.apk
-          make android "${SIGN[@]}"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android
-          path: |
-            build/pocket-agent.apk
-            build/pocket-agent-lite.apk
+          path: build/pocket-agent.apk
           if-no-files-found: error
 
   ios:
@@ -172,16 +189,24 @@ jobs:
           if-no-files-found: warn
 
   release:
-    needs: [android, ios]
+    needs: [engine, android, ios]
     # Attach whatever built, so one failing platform doesn't block the other.
     if: ${{ !cancelled() && (needs.android.result == 'success' || needs.ios.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Collect build artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-files
           merge-multiple: true
+      - name: Write the engine manifest
+        if: needs.engine.result == 'success'
+        run: |
+          mkdir -p build/engine
+          cp release-files/libpocketllama-* build/engine/
+          scripts/engine-manifest.sh "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}" > release-files/engine-manifest.json
+          cat release-files/engine-manifest.json
       - name: Attach files to the release
         uses: softprops/action-gh-release@v2
         with:

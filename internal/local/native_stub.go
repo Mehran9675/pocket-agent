@@ -1,18 +1,20 @@
-//go:build !llama || !cgo
+//go:build !cgo
 
 package local
 
 import "context"
 
-type stubEngine struct{}
+const engineABI = 1
 
-// NewEngine returns the platform engine; this build has none.
-func NewEngine() Engine { return stubEngine{} }
+type stubEngine struct{ rt *Runtime }
+
+// NewEngine returns the platform engine; builds without cgo have none.
+func NewEngine(rt *Runtime) Engine { return stubEngine{rt} }
 
 func (stubEngine) Available() bool                { return false }
 func (stubEngine) Load(string, LoadOptions) error { return ErrUnavailable }
 func (stubEngine) Problem() string {
-	return "This build doesn't include the on-device engine. Use a cloud model or Ollama / LM Studio on your network."
+	return "This build can't run on-device models. Use a cloud model or Ollama / LM Studio on your network."
 }
 func (stubEngine) Loaded() string           { return "" }
 func (stubEngine) Unload()                  {}

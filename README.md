@@ -20,7 +20,9 @@ dozens of sources and writes a cited report. Written in Go with
 
 **Models**
 
-- **On-device inference** with llama.cpp (Metal on iPhone/iPad): a curated catalog of GGUF
+- **On-device inference** with llama.cpp (Metal on iPhone/iPad). On Android the engine is a
+  small download (a few MB, picked for the phone's CPU) that the app checks for updates at
+  every launch and installs automatically; on iOS it's built into the app. A curated catalog of GGUF
   models sized for phones (Qwen3, Llama 3.2, Gemma 3, Phi-4 mini, SmolLM2) with a fit rating
   for the device's RAM, resumable downloads, Hugging Face search, GGUF import, prompt-cache
   reuse between turns, and context / creativity / length / GPU settings.
@@ -34,7 +36,8 @@ dozens of sources and writes a cited report. Written in Go with
 
 - Streaming Markdown: headings, lists, task lists, tables, quotes, links, code blocks with
   copy; visible **thinking** for reasoning models (Claude, Gemini, DeepSeek, Qwen3 `<think>`).
-- **Attachments**: images for vision models (resized for upload) and documents - PDF, Word,
+- **Voice input** on Android (system speech recognition).
+- **Attachments**: photos from the library or camera (Android) for vision models, and documents - PDF, Word,
   Excel, PowerPoint, HTML, Markdown, CSV, JSON, code - extracted to text on the device.
 - **Tools** the model can call: web search, read web page, calculator, date/time, a JavaScript
   sandbox, reading long attachments, long-term memory. Per-tool permissions with inline
@@ -61,8 +64,11 @@ dozens of sources and writes a cited report. Written in Go with
 - Responsive shell: drawer on phones, persistent sidebar on tablets, sidebar + **inspector**
   (plan, workspace files, sources) on wide iPads.
 - Dark, light or system theme, six accent colors, three text sizes; Inter and JetBrains Mono.
-- Everything stays on the device: conversations, keys, files and memory live in the app's
-  private storage; messages go only to the provider you pick.
+- Everything stays on the device: conversations, files and memory live in the app's private
+  storage, API keys in the Keychain / Android Keystore; messages go only to the provider you pick.
+- Native touches: swipe a conversation to pin or delete it, long-press for its menu, haptics,
+  a notification when a reply finishes in the background, and the screen kept awake while a
+  model runs on the device.
 
 ## Quick start (desktop, no keys needed)
 
@@ -79,12 +85,12 @@ or network. Remove `-tags devmock` (`make run`) for the real app.
 ```sh
 go install gioui.org/cmd/gogio@latest
 make android                 # build/pocket-agent.apk (arm64, Android 9+)
-make ios SIGNKEY=<profile>   # build/PocketAgent.ipa, one universal iPhone + iPad app
-
-# with the on-device engine
-make llama-android && make android LLAMA=1
-make llama-ios && make ios LLAMA=1 SIGNKEY=<profile>
+make engine-android          # build/engine/libpocketllama-android-*.so, the downloadable engine
+make llama-ios && make ios LLAMA=1 SIGNKEY=<profile>   # universal iPhone + iPad app, engine built in
 ```
+
+Each GitHub release attaches the APK, the engine builds and `engine-manifest.json`, which
+installed apps read at launch to download the engine and its updates.
 
 See [docs/building.md](docs/building.md) for prerequisites, signing and troubleshooting.
 
@@ -94,18 +100,17 @@ See [docs/building.md](docs/building.md) for prerequisites, signing and troubles
 main.go                 app entry: data dir, fonts, theme, window
 assets/                 fonts (Inter, JetBrains Mono), Lucide icons, app icon
 internal/llm            provider-neutral messages + Anthropic, OpenAI-compatible, Gemini adapters
-internal/local          llama.cpp engine (cgo, "llama" tag), model catalog, downloader
+engine/                 the on-device engine: a C interface over llama.cpp, built as a shared library
+internal/local          engine loader and updater, model catalog, downloader
 internal/agent          tool loop, history building, system prompt, deep research pipeline
 internal/tools          built-in tools, web search engines, JavaScript sandbox, MCP client
 internal/docs           attachment extraction (PDF, Office, HTML, images)
 internal/store          data model and JSON persistence
-internal/platform       OS integrations Giode lacks (open URL)
 internal/ui             screens - one view per file
 internal/ui/widgets     component kit - one component per file
-internal/ui/markdown    Markdown renderer
 internal/ui/theme       design tokens, fonts, icons
-scripts/build-llama.sh  builds llama.cpp static libraries per platform
-docs/                   building, architecture, Giode feature requests
+scripts/                engine builds (build-engine.sh, build-llama.sh for iOS), manifest, app icon
+docs/                   building, architecture
 ```
 
 More in [docs/architecture.md](docs/architecture.md).
@@ -114,12 +119,12 @@ More in [docs/architecture.md](docs/architecture.md).
 ## Tests
 
 ```sh
-make test   # providers (SSE parsing), tools, agent loop, history, store, Markdown, documents
+make test   # providers (SSE parsing), tools, agent loop, history, store, engine updater, documents
 make vet
 ```
 
 ## Third-party
 
-Inter and JetBrains Mono (SIL Open Font License), Lucide icons (ISC), llama.cpp (MIT, linked
-only with the `llama` tag), goldmark, goja, ledongthuc/pdf, the Anthropic Go SDK. License files
+Inter and JetBrains Mono (SIL Open Font License), Lucide icons (ISC), llama.cpp (MIT, in the
+engine library), goldmark, goja, ledongthuc/pdf, the Anthropic Go SDK. License files
 for the bundled fonts and icons are in `assets/`.

@@ -7,16 +7,20 @@ ICON    := assets/appicon.png
 OUT     := build
 GOGIO   ?= gogio
 
-# Set LLAMA=1 to include the on-device engine (run scripts/build-llama.sh first).
+# iOS only: set LLAMA=1 to compile the on-device engine into the app (run
+# scripts/build-llama.sh ios first). Android and desktops download it.
 TAGS := $(if $(LLAMA),llama,)
 
-.PHONY: run dev test vet desktop android ios ios-sim clean llama-android llama-ios
+# A locally built engine for desktop runs (make engine).
+HOST_ENGINE = $(firstword $(wildcard $(OUT)/engine/libpocketllama-linux-*.so $(OUT)/engine/libpocketllama-darwin-*.dylib))
+
+.PHONY: run dev test vet desktop android ios ios-sim clean engine engine-android llama-ios
 
 run:            ## run on the desktop
-	go run -tags "$(TAGS)" .
+	POCKET_AGENT_ENGINE=$(HOST_ENGINE) go run .
 
 dev:            ## run on the desktop with the offline Demo provider and the Giode MCP server
-	GIODE_MCP=1 go run -tags "devmock $(TAGS)" .
+	POCKET_AGENT_ENGINE=$(HOST_ENGINE) GIODE_MCP=1 go run -tags devmock .
 
 test:
 	go test ./...
@@ -27,12 +31,12 @@ vet:
 
 desktop:
 	mkdir -p $(OUT)
-	go build -tags "$(TAGS)" -o $(OUT)/pocket-agent .
+	go build -o $(OUT)/pocket-agent .
 
 android:        ## APK for arm64 phones and tablets (Android 9+)
 	mkdir -p $(OUT)
 	$(GOGIO) -target android -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
-		-icon $(ICON) -minsdk 28 -tags "$(TAGS)" $(if $(SIGNKEY),-signkey $(SIGNKEY) -signpass "$(SIGNPASS)",) \
+		-icon $(ICON) -minsdk 28 $(if $(SIGNKEY),-signkey $(SIGNKEY) -signpass "$(SIGNPASS)",) \
 		-o $(OUT)/pocket-agent.apk .
 
 ios:            ## universal iPhone + iPad app; SIGNKEY = provisioning profile
@@ -47,8 +51,12 @@ ios-sim:        ## .app for the iOS simulator (without the on-device engine)
 	$(GOGIO) -target ios -arch amd64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 15 -o $(OUT)/PocketAgent.app .
 
-llama-android:
-	scripts/build-llama.sh android
+engine:         ## the on-device engine for this computer
+	scripts/build-engine.sh $(if $(filter Darwin,$(shell uname -s)),darwin,linux)
+
+engine-android: ## the on-device engine builds for Android phones
+	scripts/build-engine.sh android armv8.2
+	scripts/build-engine.sh android armv8
 
 llama-ios:
 	scripts/build-llama.sh ios

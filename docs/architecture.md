@@ -18,7 +18,7 @@
         │ Anthropic SDK │   │ web · JS · fs  │── MCP servers (HTTP)
         │ OpenAI-compat │   │ plan · memory  │
         │ Gemini        │   └────────────────┘
-        │ local.Provider│── internal/local ── llama.cpp (cgo, "llama" tag)
+        │ local.Provider│── internal/local ── engine/ libpocketllama (dlopen; linked in on iOS)
         └───────────────┘
 ```
 
@@ -38,9 +38,11 @@
 - `Gemini` - `streamGenerateContent` over SSE, function calling, thought parts, and the
   model's own parts (with thought signatures) replayed verbatim.
 
-**`internal/local`** runs GGUF models: `Engine` (llama.cpp via cgo, a stub without the `llama`
-tag) keeps one model loaded, reuses the longest common prefix of the KV cache between turns,
-and cancels decoding through llama.cpp's abort callback. `Provider` adapts it to
+**`internal/local`** runs GGUF models. The engine itself lives in `engine/`: a C interface over
+llama.cpp that keeps one model loaded, reuses the longest common prefix of the KV cache between
+turns, and cancels decoding through llama.cpp's abort callback. `Runtime` downloads, verifies,
+installs and updates it from the release manifest; `Engine` binds its functions with `dlopen`
+(or, on iOS, links it in) and streams pieces back through a cgo callback. `Provider` adapts it to
 `llm.Provider`, formats prompts with the model's own chat template (ChatML fallback), trims old
 turns to fit the context, and offers tools through a `<tool_call>` prompt protocol parsed out
 of the stream. `Store` manages the models directory, resumable downloads and Hugging Face
@@ -65,8 +67,8 @@ queued and coalesced on a background goroutine; `Flush` runs when the app goes t
 background.
 
 **`internal/ui`** is the Giode interface. Screens are methods on `App`, one view per file;
-reusable components are in `widgets` (one per file), design tokens and fonts in `theme`,
-Markdown rendering in `markdown`.
+reusable components are in `widgets` (one per file), design tokens and fonts in `theme`.
+Markdown, sheets, the drawer, pickers, dictation, secure storage and haptics come from Giode.
 
 ## Threading
 
@@ -82,7 +84,7 @@ Tool approval blocks the agent goroutine on a channel that the inline approval c
 
 Finished messages are wrapped in `giode.Memo`, keyed by message ID and rebuilt only when the
 message's version, expanded sections or theme change; only the streaming reply is rebuilt each
-frame. Parsed Markdown documents are cached per text block. The message list pins itself to the
+frame. The message list pins itself to the
 bottom while content grows unless the user has scrolled up.
 
 ## Responsive layout
@@ -96,4 +98,6 @@ bottom while content grows unless the user has scrolled up.
 ## Data location
 
 `app.DataDir()/pocket-agent/` - `settings.json`, `agents.json`, `memory.json`,
-`conversations/<id>.json`, `attachments/`, `workspaces/<conversation>/`, `models/*.gguf`.
+`conversations/<id>.json`, `attachments/`, `workspaces/<conversation>/`, `models/*.gguf`,
+`engine/<version>/`. API keys are kept in the platform credential store (Keychain, Android
+Keystore, Secret Service) and stay in `settings.json` only where none is available.

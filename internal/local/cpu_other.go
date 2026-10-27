@@ -2,6 +2,6 @@
 
 package local
 
-// cpuProblem reports why the CPU can't run the engine; other platforms
-// have no requirement beyond the build.
-func cpuProblem() string { return "" }
+// cpuVariants lists the engine builds this CPU can run, best first;
+// other platforms have one build.
+func cpuVariants() []string { return []string{""} }

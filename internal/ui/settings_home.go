@@ -111,7 +111,7 @@ func fontScaleIdx(f float64) int {
 
 func engineSummary(a *App) string {
 	if !a.engine.Available() {
-		return "Unavailable"
+		return a.engineLabel()
 	}
-	return fmt.Sprintf("llama.cpp · %d-token context", a.settings.Local.ContextSize)
+	return fmt.Sprintf("%s · %d-token context", a.engineLabel(), a.settings.Local.ContextSize)
 }

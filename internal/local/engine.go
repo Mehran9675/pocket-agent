@@ -1,7 +1,8 @@
 // Package local runs language models on the device: GGUF models
-// executed by llama.cpp (linked in with the "llama" build tag, see
-// scripts/build-llama.sh), a catalog of models sized for phones and
-// tablets, and a resumable downloader for Hugging Face.
+// executed by llama.cpp through the engine library in engine/ (downloaded
+// and kept up to date by Runtime; linked in on iOS), a catalog of models
+// sized for phones and tablets, and a resumable downloader for Hugging
+// Face.
 package local
 
 import (
@@ -10,9 +11,8 @@ import (
 	"runtime"
 )
 
-// ErrUnavailable is returned when the app was built without the
-// on-device engine.
-var ErrUnavailable = errors.New("this build has no on-device engine - rebuild with -tags llama (see docs/building.md), or connect to Ollama / LM Studio on your network")
+// ErrUnavailable is returned when no engine is installed.
+var ErrUnavailable = errors.New("the on-device engine isn't installed - download it from the model library, or connect to Ollama / LM Studio on your network")
 
 // LoadOptions configure a model load.
 type LoadOptions struct {

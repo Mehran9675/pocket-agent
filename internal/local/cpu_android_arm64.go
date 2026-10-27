@@ -9,19 +9,18 @@ import (
 )
 
 var (
-	cpuOnce sync.Once
-	cpuMsg  string
+	cpuOnce   sync.Once
+	cpuModern bool
 )
 
-// cpuProblem reports why this phone's CPU can't run the engine. Android
-// builds of llama.cpp use the ARMv8.2 dot-product and half-precision
-// instructions (scripts/build-llama.sh); on older CPUs they would crash
-// the app, so the engine turns itself off instead.
-func cpuProblem() string {
+// cpuVariants lists the engine builds this phone can run, best first.
+// The armv8.2 build uses the dot-product and half-precision
+// instructions, which crash older CPUs; the armv8 build runs anywhere.
+func cpuVariants() []string {
 	cpuOnce.Do(func() {
 		data, err := os.ReadFile("/proc/cpuinfo")
 		if err != nil {
-			return // can't tell; assume a modern CPU
+			return
 		}
 		feats := map[string]bool{}
 		for _, line := range strings.Split(string(data), "\n") {
@@ -31,12 +30,10 @@ func cpuProblem() string {
 				}
 			}
 		}
-		if len(feats) == 0 {
-			return
-		}
-		if !feats["asimddp"] || !feats["asimdhp"] {
-			cpuMsg = "This phone's processor is too old for on-device models (it needs ARMv8.2 dot-product support). Use a cloud model or Ollama / LM Studio on your network."
-		}
+		cpuModern = feats["asimddp"] && feats["asimdhp"]
 	})
-	return cpuMsg
+	if cpuModern {
+		return []string{"armv8.2", "armv8"}
+	}
+	return []string{"armv8"}
 }

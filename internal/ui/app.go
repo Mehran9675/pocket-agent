@@ -7,6 +7,8 @@ package ui
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -48,6 +50,7 @@ type App struct {
 	releaseAwake func()
 
 	engine     local.Engine
+	runtime    *local.Runtime
 	models     *local.Store
 	localProv  *local.Provider
 	loadingLLM string
@@ -113,7 +116,6 @@ func New(win *giode.App, st *store.Store) *App {
 		convs:          st.LoadConversations(),
 		agents:         st.LoadAgents(),
 		runs:           map[string]*runState{},
-		engine:         local.NewEngine(),
 		mcp:            map[string]*tools.MCPClient{},
 		mcpTools:       map[string][]*tools.Tool{},
 		mcpStatus:      map[string]string{},
@@ -128,6 +130,13 @@ func New(win *giode.App, st *store.Store) *App {
 	a.draft = draft{mode: store.ModeChat, depth: store.DepthStandard, model: a.settings.DefaultModel}
 	a.models = local.NewStore(st.ModelsDir())
 	a.models.OnChange = func() { win.Post(func() {}) }
+	a.runtime = local.NewRuntime(filepath.Join(st.Dir(), "engine"), os.Getenv("POCKET_AGENT_ENGINE_MANIFEST"))
+	a.runtime.OnChange = func() { win.Post(func() {}) }
+	if lib := os.Getenv("POCKET_AGENT_ENGINE"); lib != "" {
+		a.runtime.UseLocal(lib)
+	}
+	a.engine = local.NewEngine(a.runtime)
+	a.checkEngine()
 	a.localProv = &local.Provider{
 		Engine: a.engine,
 		Store:  a.models,
