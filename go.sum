@@ -103,8 +103,8 @@ github.com/invopop/jsonschema v0.14.0 h1:MHQqLhvpNUZfw+hM3AZDYK7jxO8FZoQeQM77g8i
 github.com/invopop/jsonschema v0.14.0/go.mod h1:ygm6C2EaVNMBDPpaPlnOA2pFAxBnxGjFlMZABxm9n2I=
 github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e h1:U2Z+V2xqvjJg0azbxHnhOmz2DrpYq0WKpItMPKR6FhY=
 github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e/go.mod h1:1fEHWurg7pvf5SG6XNE5Q8UZmOwex51Mkx3SLhrW5B4=
-github.com/mehran9675/giode v0.1.5-alpha.1 h1:b65XCiEoKupY6u4OGHQ3vwCIGxH1tllWmmhlVMOqJvo=
-github.com/mehran9675/giode v0.1.5-alpha.1/go.mod h1:BSCQZdDJ7+DCEUPSK0W3rnuoLJCieq9o5tIgPBH3GLE=
+github.com/mehran9675/giode v0.1.6-alpha.1 h1:qLYtbqA+9nDwCxj8xZCUq98weIq64xOsdjoYVG7UhOM=
+github.com/mehran9675/giode v0.1.6-alpha.1/go.mod h1:BSCQZdDJ7+DCEUPSK0W3rnuoLJCieq9o5tIgPBH3GLE=
 github.com/modelcontextprotocol/go-sdk v1.3.1 h1:TfqtNKOIWN4Z1oqmPAiWDC2Jq7K9OdJaooe0teoXASI=
 github.com/modelcontextprotocol/go-sdk v1.3.1/go.mod h1:DgVX498dMD8UJlseK1S5i1T4tFz2fkBk4xogC3D15nw=
 github.com/pb33f/ordered-map/v2 v2.3.1 h1:5319HDO0aw4DA4gzi+zv4FXU9UlSs3xGZ40wcP1nBjY=

@@ -7,7 +7,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/dop251/goja v0.0.0-20261026132650-6b6a90e51946
 	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
-	github.com/mehran9675/giode v0.1.5-alpha.1
+	github.com/mehran9675/giode v0.1.6-alpha.1
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.48.0
 )
