@@ -1,6 +1,7 @@
 name: Release
 
 # Builds the project and attaches the files to the published GitHub release:
+# Packaging uses the giode CLI with giode.toml (manifest entries, Info.plist texts).
 #   - Android APK (arm64, Android 9+), signed with a release keystore when
 #     ANDROID_KEYSTORE_BASE64/ANDROID_KEYSTORE_PASS secrets are set, otherwise
 #     with the debug keystore
@@ -87,15 +88,15 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0 ndk;27.0.12077973'
-      - name: Install gogio
-        run: go install gioui.org/cmd/gogio@latest
+      - name: Install the giode CLI
+        run: go install github.com/mehran9675/giode-cli/cmd/giode@2e63ad8baee1562f2358b8ebbbe8d6605a4c2a9b
       - name: Use the release tag as the app version
         run: |
           TAG_VERSION=$(echo "${{ github.ref_name }}" | sed -E 's/^v//')
           if echo "$TAG_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "VERSION=$TAG_VERSION" >> "$GITHUB_ENV"
           fi
-      - name: Point gogio at the Android SDK and NDK
+      - name: Point the build at the Android SDK and NDK
         run: |
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
@@ -133,8 +134,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Install gogio
-        run: go install gioui.org/cmd/gogio@latest
+      - name: Install the giode CLI
+        run: go install github.com/mehran9675/giode-cli/cmd/giode@2e63ad8baee1562f2358b8ebbbe8d6605a4c2a9b
       - name: Use the release tag as the app version
         run: |
           TAG_VERSION=$(echo "${{ github.ref_name }}" | sed -E 's/^v//')

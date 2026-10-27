@@ -23,6 +23,10 @@ func (a *App) settingsPage(sub string, compact bool) widgets.El {
 		return a.pageScaffold("memory", "Memory", compact, nil, a.memoryBody)
 	case sub == "instructions":
 		return a.pageScaffold("instructions", "Custom instructions", compact, nil, a.instructionsBody)
+	case sub == "local/perf":
+		return a.pageScaffold("local/perf", "Performance & memory", compact, nil, a.enginePerfBody)
+	case sub == "local/sampling":
+		return a.pageScaffold("local/sampling", "Sampling", compact, nil, a.samplingBody)
 	case sub == "local":
 		return a.pageScaffold("local", "On-device engine", compact, nil, a.engineBody)
 	case sub == "about":

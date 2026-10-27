@@ -1,0 +1,33 @@
+# Packaging for the giode CLI (github.com/mehran9675/giode-cli): `giode build android`,
+# `giode run android`, ... scripts/giode-build.sh sets the per-build values (version,
+# build tags, signing files) for one build; see docs/building.md.
+
+[app]
+name = "Pocket Agent"
+id = "com.mehran9675.pocketagent"
+version = "1.0.0"
+build = 1
+icon = "assets/appicon.png"
+publisher = "Mehran"
+description = "Private AI chat, research and agents - on-device or with the cloud models you choose."
+website = "https://github.com/Mehran9675/pocket-agent"
+output = "build"
+
+[android]
+min_sdk = 28
+target_sdk = 35
+arch = ["arm64"]
+# microphone: dictation; vibrate: haptics. No camera permission: photos come from the
+# system camera app, which Android refuses to an app declaring CAMERA without holding it.
+permissions = ["network", "networkstate", "microphone", "vibrate"]
+# The foreground service behind App.KeepAlive, so agent runs finish when the app leaves the screen.
+keep_alive = true
+notifications = true
+
+[ios]
+min_os = 15
+
+[ios.usage]
+camera = "Pocket Agent uses the camera to attach photos you take to a message."
+microphone = "Pocket Agent uses the microphone so you can dictate messages."
+speech = "Pocket Agent turns your speech into text so you can dictate messages."

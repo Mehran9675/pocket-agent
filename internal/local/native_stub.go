@@ -4,7 +4,7 @@ package local
 
 import "context"
 
-const engineABI = 1
+const engineABI = 2
 
 type stubEngine struct{ rt *Runtime }
 

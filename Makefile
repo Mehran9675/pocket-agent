@@ -1,11 +1,10 @@
 # Pocket Agent build targets. See docs/building.md.
 
-APPID   ?= com.mehran9675.pocketagent
-NAME    ?= Pocket Agent
+# App name, ID, icon, permissions and Info.plist texts are in giode.toml; packaging uses the
+# giode CLI (go install github.com/mehran9675/giode-cli/cmd/giode@latest).
 VERSION ?= 1.0.0.1
-ICON    := assets/appicon.png
 OUT     := build
-GOGIO   ?= gogio
+export GIODE ?= giode
 
 # iOS only: set LLAMA=1 to compile the on-device engine into the app (run
 # scripts/build-llama.sh ios first). Android and desktops download it.
@@ -33,25 +32,19 @@ desktop:
 	mkdir -p $(OUT)
 	go build -o $(OUT)/pocket-agent .
 
-android:        ## APK for arm64 phones and tablets (Android 9+)
+android:        ## APK for arm64 phones and tablets (Android 9+); SIGNKEY/SIGNPASS for a release keystore
 	mkdir -p $(OUT)
-	$(GOGIO) -target android -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
-		-icon $(ICON) -minsdk 28 $(if $(SIGNKEY),-signkey $(SIGNKEY) -signpass "$(SIGNPASS)",) \
-		-o $(OUT)/pocket-agent.apk .
+	VERSION=$(VERSION) KEYSTORE=$(SIGNKEY) GIODE_KEYSTORE_PASS="$(SIGNPASS)" \
+		scripts/giode-build.sh -o $(OUT)/pocket-agent.apk android
 
 ios:            ## universal iPhone + iPad app; SIGNKEY = provisioning profile
 	mkdir -p $(OUT)
-	$(GOGIO) -target ios -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
-		-icon $(ICON) -minsdk 15 -tags "$(TAGS)" $(if $(SIGNKEY),-signkey "$(SIGNKEY)",) \
-		-o $(OUT)/PocketAgent.ipa .
-	scripts/ios-plist.sh $(OUT)/PocketAgent.ipa
+	VERSION=$(VERSION) TAGS=$(TAGS) PROFILE=$(SIGNKEY) APPID=$(APPID) \
+		scripts/giode-build.sh -o $(OUT)/PocketAgent.ipa ios
 
 ios-sim:        ## .app for the iOS simulator (without the on-device engine)
 	mkdir -p $(OUT)
-	# gogio builds simulator apps for Intel only; they run on Apple silicon Macs too.
-	$(GOGIO) -target ios -arch amd64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
-		-icon $(ICON) -minsdk 15 -o $(OUT)/PocketAgent.app .
-	scripts/ios-plist.sh $(OUT)/PocketAgent.app
+	VERSION=$(VERSION) scripts/giode-build.sh -o $(OUT)/PocketAgent.app ios-sim
 
 engine:         ## the on-device engine for this computer
 	scripts/build-engine.sh $(if $(filter Darwin,$(shell uname -s)),darwin,linux)

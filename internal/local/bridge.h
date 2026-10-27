@@ -6,7 +6,7 @@
 typedef struct {
 	int32_t (*abi_version)(void);
 	const char *(*engine_version)(void);
-	pa_model *(*load)(const char *, int32_t, int32_t, int32_t, volatile int32_t *, char *, int32_t);
+	pa_model *(*load)(const char *, const pa_load_params *, volatile int32_t *, char *, int32_t);
 	void (*free)(pa_model *);
 	int32_t (*n_ctx)(pa_model *);
 	int32_t (*apply_template)(pa_model *, const pa_message *, int32_t, int32_t, char *, int32_t);

@@ -83,6 +83,35 @@ func TestNativeEngine(t *testing.T) {
 		t.Fatalf("canceled generate returned %v", err)
 	}
 
+	// Every sampler and the quantized KV cache.
+	e.Unload()
+	if err := e.Load(model, LoadOptions{ContextSize: 512, CacheTypeK: KVQ8_0, CacheTypeV: KVQ8_0, FlashAttn: FlashAttnOn, BatchSize: 128, LoadMode: LoadRead}); err != nil {
+		t.Fatal(err)
+	}
+	all := p
+	all.MaxTokens = 8
+	all.TypicalP, all.TopNSigma, all.FrequencyPenalty, all.PresencePenalty = 0.9, 2, 0.1, 0.1
+	all.DRYMultiplier, all.XTCProbability, all.Seed = 0.8, 0.5, 42
+	first, second := "", ""
+	if _, err := e.Generate(context.Background(), prompt, all, func(s string) bool { first += s; return true }); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Generate(context.Background(), prompt, all, func(s string) bool { second += s; return true }); err != nil || first != second {
+		t.Fatalf("seeded runs differ: %q / %q (%v)", first, second, err)
+	}
+	all.Mirostat = 2
+	if _, err := e.Generate(context.Background(), prompt, all, func(string) bool { return true }); err != nil {
+		t.Fatal(err)
+	}
+	// A quantized V cache without flash attention is refused with advice.
+	e.Unload()
+	if err := e.Load(model, LoadOptions{ContextSize: 512, CacheTypeV: KVQ4_0, FlashAttn: FlashAttnOff}); err == nil || !strings.Contains(err.Error(), "flash attention") {
+		t.Fatalf("quantized V without flash attention: %v", err)
+	}
+	if err := e.Load(model, LoadOptions{ContextSize: 256}); err != nil {
+		t.Fatal(err)
+	}
+
 	// Too long a prompt is reported, not crashed on.
 	if _, err := e.Generate(context.Background(), strings.Repeat("word ", 400), p, func(string) bool { return true }); err == nil || !strings.Contains(err.Error(), "context") {
 		t.Fatalf("long prompt: %v", err)

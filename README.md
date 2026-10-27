@@ -26,7 +26,10 @@ dozens of sources and writes a cited report. Written in Go with
   models sized for phones (Qwen3, Llama 3.2, Gemma 3, Phi-4 mini, SmolLM2) with a fit rating
   for the device's RAM, resumable downloads, Hugging Face search, GGUF import, prompt-cache
   reuse between turns, context windows from 2K up to the model's full trained length, and
-  creativity / length / GPU settings.
+  llama.cpp's controls: KV cache types (F16, BF16, Q8_0, Q5_0, Q4_0), flash attention, batch
+  sizes, threads, memory-mapped or locked loading, GPU offload, and every sampler - temperature,
+  top-k/p, min-p, typical-p, top-nσ, repetition, frequency and presence penalties, DRY, XTC,
+  Mirostat 2.0 and a fixed seed.
 - **Cloud providers** with your own keys: Anthropic (official Go SDK, adaptive thinking,
   server-side refusal fallback), OpenAI, Google Gemini, xAI, Mistral, DeepSeek, Moonshot (Kimi),
   Z.ai (GLM), Alibaba Cloud (Qwen), MiniMax, Perplexity, Cohere; inference platforms OpenRouter,
@@ -89,7 +92,7 @@ or network. Remove `-tags devmock` (`make run`) for the real app.
 ## Building for phones and tablets
 
 ```sh
-go install gioui.org/cmd/gogio@latest
+go install github.com/mehran9675/giode-cli/cmd/giode@latest   # packaging; see giode.toml
 make android                 # build/pocket-agent.apk (arm64, Android 9+)
 make engine-android          # build/engine/libpocketllama-android-*.so, the downloadable engine
 make llama-ios && make ios LLAMA=1 SIGNKEY=<profile>   # universal iPhone + iPad app, engine built in

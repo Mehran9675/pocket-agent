@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/pocket-agent/internal/store"
@@ -11,20 +12,6 @@ import (
 
 func (a *App) engineBody() widgets.El {
 	ls := &a.settings.Local
-	tempOpts := []float64{0.2, 0.7, 1.0}
-	tempIdx := 1
-	for i, v := range tempOpts {
-		if v == ls.Temperature {
-			tempIdx = i
-		}
-	}
-	lenOpts := []int{1024, 2048, 4096}
-	lenIdx := 1
-	for i, v := range lenOpts {
-		if v == ls.MaxTokens {
-			lenIdx = i
-		}
-	}
 	unload := func() {
 		a.engine.Unload()
 		a.toast(giode.ToastInfo, "Model unloaded")
@@ -48,26 +35,39 @@ func (a *App) engineBody() widgets.El {
 				return widgets.Button("eng/unload", "Unload model", "", widgets.BtnSecondary, unload)
 			})),
 		a.contextPicker(ls),
-		widgets.Col(widgets.St{Gap: 8, Width: -1}, widgets.Text("Creativity", theme.SizeCallout, theme.T.Text, giode.FontWeightMedium),
-			widgets.Segmented("eng/temp", []string{"Precise", "Balanced", "Creative"}, nil, tempIdx, func(i int) {
-				ls.Temperature = tempOpts[i]
-				a.saveSettings()
-			})),
-		widgets.Col(widgets.St{Gap: 8, Width: -1}, widgets.Text("Maximum reply length", theme.SizeCallout, theme.T.Text, giode.FontWeightMedium),
-			widgets.Segmented("eng/len", []string{"Short", "Medium", "Long"}, nil, lenIdx, func(i int) {
-				ls.MaxTokens = lenOpts[i]
-				a.saveSettings()
-			})),
-		widgets.Group(widgets.ListRow("eng/gpu", "zap", "#34d399", "GPU acceleration", "Use Metal on iPhone and iPad when available", widgets.Toggle("eng/gpu/t", ls.GPULayers != 0, func(v bool) {
-			if v {
-				ls.GPULayers = -1
-			} else {
-				ls.GPULayers = 0
-			}
-			a.saveSettings()
-			a.engine.Unload()
-		}), nil)),
+		widgets.Group(
+			widgets.ListRow("eng/sampling", "sliders-horizontal", "#f59e0b", "Sampling", samplingSummary(ls), nil, func() { a.navigate("settings/local/sampling") }),
+			widgets.ListRow("eng/perf", "gauge", "#34d399", "Performance & memory", perfSummary(ls), nil, func() { a.navigate("settings/local/perf") }),
+		),
 	)
+}
+
+// samplingSummary describes the sampling settings in a line.
+func samplingSummary(ls *store.LocalSettings) string {
+	g := ls.Sampling
+	s := fmt.Sprintf("Temperature %.2f", ls.Temperature)
+	switch {
+	case g.Mirostat == 2:
+		s += " · Mirostat"
+	case g.DRYMultiplier > 0:
+		s += " · DRY"
+	}
+	return s + fmt.Sprintf(" · up to %d tokens", ls.MaxTokens)
+}
+
+// perfSummary describes the load options in a line.
+func perfSummary(ls *store.LocalSettings) string {
+	lo := ls.Load
+	k, v := kvLabels[indexOr(kvTypes, lo.CacheTypeK, 0)], kvLabels[indexOr(kvTypes, lo.CacheTypeV, 0)]
+	s := "KV cache " + k
+	if k != v {
+		s += "/" + v
+	}
+	s += " · flash attention " + strings.ToLower(flashLabels[indexOr(flashModes, lo.FlashAttn, 0)])
+	if ls.GPULayers == 0 {
+		s += " · CPU only"
+	}
+	return s
 }
 
 // contextOptions are the context windows offered, in tokens; -1 is the

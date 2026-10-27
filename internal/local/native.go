@@ -12,8 +12,8 @@ extern int32_t paGoPiece(void *, char *, int32_t);
 
 static int32_t w_abi(void) { return pa_api.abi_version(); }
 static const char *w_version(void) { return pa_api.engine_version(); }
-static pa_model *w_load(const char *path, int32_t n_ctx, int32_t threads, int32_t gpu, int32_t *abort, char *err, int32_t errlen) {
-	return pa_api.load(path, n_ctx, threads, gpu, abort, err, errlen);
+static pa_model *w_load(const char *path, const pa_load_params *p, int32_t *abort, char *err, int32_t errlen) {
+	return pa_api.load(path, p, abort, err, errlen);
 }
 static void w_free(pa_model *m) { pa_api.free(m); }
 static int32_t w_n_ctx(pa_model *m) { return pa_api.n_ctx(m); }
@@ -133,7 +133,8 @@ func (e *nativeEngine) Load(path string, opts LoadOptions) error {
 	defer C.free(unsafe.Pointer(cpath))
 	cerr := (*C.char)(C.calloc(errLen, 1))
 	defer C.free(unsafe.Pointer(cerr))
-	m := C.w_load(cpath, C.int32_t(opts.ContextSize), C.int32_t(threads), C.int32_t(opts.GPULayers), e.abort, cerr, errLen)
+	lp := opts.cParams(threads)
+	m := C.w_load(cpath, &lp, e.abort, cerr, errLen)
 	if m == nil {
 		return errors.New(C.GoString(cerr))
 	}
@@ -243,14 +244,7 @@ func (e *nativeEngine) Generate(ctx context.Context, prompt string, p GenParams,
 	g := &generation{onPiece: onPiece}
 	h := cgo.NewHandle(g)
 	defer h.Delete()
-	params := C.pa_params{
-		temperature:    C.float(p.Temperature),
-		top_p:          C.float(p.TopP),
-		min_p:          C.float(p.MinP),
-		repeat_penalty: C.float(p.RepeatPenalty),
-		top_k:          C.int32_t(p.TopK),
-		max_tokens:     C.int32_t(p.MaxTokens),
-	}
+	params := p.cParams()
 	cprompt := C.CString(prompt)
 	defer C.free(unsafe.Pointer(cprompt))
 	cerr := (*C.char)(C.calloc(errLen, 1))
@@ -276,5 +270,91 @@ func (e *nativeEngine) Generate(ctx context.Context, prompt string, p GenParams,
 		return st, fmt.Errorf("the conversation (%d tokens) no longer fits this model's %d-token context - start a new chat or raise the context size", st.PromptTokens, e.nctx)
 	default:
 		return st, errors.New(C.GoString(cerr))
+	}
+}
+
+// cParams converts o for pa_load.
+func (o LoadOptions) cParams(threads int) C.pa_load_params {
+	fa := C.int32_t(-1)
+	switch o.FlashAttn {
+	case FlashAttnOn:
+		fa = 1
+	case FlashAttnOff:
+		fa = 0
+	}
+	return C.pa_load_params{
+		size:            C.int32_t(unsafe.Sizeof(C.pa_load_params{})),
+		n_ctx:           C.int32_t(o.ContextSize),
+		n_threads:       C.int32_t(threads),
+		n_threads_batch: C.int32_t(o.BatchThreads),
+		n_gpu_layers:    C.int32_t(o.GPULayers),
+		n_batch:         C.int32_t(o.BatchSize),
+		n_ubatch:        C.int32_t(o.MicroBatchSize),
+		flash_attn:      fa,
+		type_k:          kvType(o.CacheTypeK),
+		type_v:          kvType(o.CacheTypeV),
+		load_mode:       loadMode(o.LoadMode),
+		offload_kqv:     boolInt(!o.NoKVOffload),
+	}
+}
+
+func kvType(t KVCacheType) C.int32_t {
+	switch t {
+	case KVQ8_0:
+		return C.PA_KV_Q8_0
+	case KVQ4_0:
+		return C.PA_KV_Q4_0
+	case KVQ5_0:
+		return C.PA_KV_Q5_0
+	case KVBF16:
+		return C.PA_KV_BF16
+	}
+	return C.PA_KV_F16
+}
+
+func loadMode(m LoadMode) C.int32_t {
+	switch m {
+	case LoadRead:
+		return C.PA_LOAD_READ
+	case LoadMmap:
+		return C.PA_LOAD_MMAP
+	case LoadLock:
+		return C.PA_LOAD_MLOCK
+	}
+	return C.PA_LOAD_AUTO
+}
+
+func boolInt(b bool) C.int32_t {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// cParams converts p for pa_generate.
+func (p GenParams) cParams() C.pa_params {
+	return C.pa_params{
+		size:               C.int32_t(unsafe.Sizeof(C.pa_params{})),
+		temperature:        C.float(p.Temperature),
+		top_k:              C.int32_t(p.TopK),
+		top_p:              C.float(p.TopP),
+		min_p:              C.float(p.MinP),
+		typical_p:          C.float(p.TypicalP),
+		top_n_sigma:        C.float(p.TopNSigma),
+		repeat_penalty:     C.float(p.RepeatPenalty),
+		frequency_penalty:  C.float(p.FrequencyPenalty),
+		presence_penalty:   C.float(p.PresencePenalty),
+		repeat_last_n:      C.int32_t(p.RepeatLastN),
+		dry_multiplier:     C.float(p.DRYMultiplier),
+		dry_base:           C.float(p.DRYBase),
+		dry_allowed_length: C.int32_t(p.DRYAllowedLength),
+		dry_last_n:         -1,
+		xtc_probability:    C.float(p.XTCProbability),
+		xtc_threshold:      C.float(p.XTCThreshold),
+		mirostat:           C.int32_t(p.Mirostat),
+		mirostat_tau:       C.float(p.MirostatTau),
+		mirostat_eta:       C.float(p.MirostatEta),
+		seed:               C.uint32_t(p.Seed),
+		max_tokens:         C.int32_t(p.MaxTokens),
 	}
 }

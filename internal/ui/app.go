@@ -142,14 +142,7 @@ func New(win *giode.App, st *store.Store) *App {
 		Store:  a.models,
 		Options: func() (local.LoadOptions, local.GenParams) {
 			ls := a.settings.Local
-			g := local.DefaultGenParams()
-			if ls.Temperature > 0 {
-				g.Temperature = float32(ls.Temperature)
-			}
-			if ls.MaxTokens > 0 {
-				g.MaxTokens = ls.MaxTokens
-			}
-			return local.LoadOptions{ContextSize: ls.ContextSize, Threads: ls.Threads, GPULayers: ls.GPULayers}, g
+			return ls.LoadOptions(), ls.GenParams()
 		},
 		OnLoad: func(model string, loading bool) {
 			win.Post(func() {

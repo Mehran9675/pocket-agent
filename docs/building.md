@@ -1,15 +1,18 @@
 # Building Pocket Agent
 
-Pocket Agent is a Go program built with Gio's `gogio` tool, which packages it as an Android
-APK or an iOS/iPadOS app. One iOS build runs on both iPhone and iPad (gogio declares device
-families 1 and 2), adapting through the app's responsive layouts.
+Pocket Agent is a Go program packaged with the [giode CLI](https://github.com/Mehran9675/giode-cli),
+which builds on Gio's gogio and adds what it can't do: Android manifest entries and iOS
+Info.plist keys. `giode.toml` holds the app name, ID, icon, permissions (microphone for
+dictation, the foreground service that lets agent runs finish in the background) and iOS
+permission texts (camera, microphone, speech recognition). One iOS build runs on both iPhone
+and iPad, adapting through the app's responsive layouts.
 
 ## Prerequisites
 
 | | |
 | --- | --- |
 | Go | 1.26.6 or later |
-| gogio | `go install gioui.org/cmd/gogio@latest` |
+| giode CLI | `go install github.com/mehran9675/giode-cli/cmd/giode@latest`; `giode doctor` checks the rest |
 | Android | Android SDK (platform 35, build-tools), NDK r27+, JDK 17+. Set `ANDROID_HOME` (and `ANDROID_NDK_ROOT` if the NDK lives elsewhere). |
 | iOS / iPadOS | macOS with Xcode 15+, an Apple developer account and a provisioning profile for the app ID. |
 | Desktop (development) | Linux: Wayland/X11/EGL/Vulkan headers ([Gio install guide](https://gioui.org/doc/install)). macOS and Windows need nothing extra. |
@@ -36,11 +39,15 @@ make android
 adb install -r build/pocket-agent.apk
 ```
 
-- Targets arm64 devices running Android 9 (API 28) or later; set `-arch` in the Makefile to add
-  `amd64` for emulators.
-- Release signing: `make android SIGNKEY=release.jks SIGNPASS=...`. Without a key, gogio signs
-  with the debug keystore. Bump the last component of `VERSION` (the version code) for every
-  store upload.
+- Targets arm64 devices running Android 9 (API 28) or later; add `amd64` to `android.arch` in
+  `giode.toml` for emulators. `giode run android` builds, installs and follows the log on a
+  connected phone.
+- Release signing: `make android SIGNKEY=release.jks SIGNPASS=...` (`giode keystore` makes one).
+  Without a key the APK is signed with the debug key. `VERSION=1.2.0.7` sets version 1.2.0
+  with version code 7; raise the last number for every store upload.
+- `scripts/giode-build.sh` writes the per-build values (version, build tags, signing files)
+  into `giode.toml` for one `giode build` and restores it afterwards; the Makefile and the
+  release workflow go through it.
 
 ## iOS and iPadOS
 
@@ -50,10 +57,6 @@ make ios SIGNKEY=/path/to/PocketAgent.mobileprovision
 
 - `APPID` must match the provisioning profile (`make ios APPID=com.example.pocketagent ...`).
 - `make ios-sim` builds a simulator `.app` (without the on-device engine).
-- Both targets run `scripts/ios-plist.sh`, which adds the camera, microphone and speech
-  recognition usage descriptions iOS requires for photo attachments and dictation (gogio
-  can't add Info.plist keys) and re-signs the app - ad hoc for the simulator, with
-  `SIGN_IDENTITY` (default: the first code signing identity in the keychain) for the `.ipa`.
 - Install the `.ipa` with Xcode (Devices and Simulators), Apple Configurator or `xcrun devicectl`.
 
 ## On-device engine (llama.cpp)
@@ -108,8 +111,8 @@ PA_TEST_ENGINE=build/engine/libpocketllama-linux-amd64.so PA_TEST_MODEL=model.gg
 
 ## App icon and name
 
-`assets/appicon.png` (1024×1024, full-bleed - the OS applies its own mask) is passed to gogio
-with `-icon`. The display name comes from `NAME` in the Makefile.
+`assets/appicon.png` (1024×1024, full-bleed - the OS applies its own mask; drawn by
+`scripts/appicon.py`) and the display name are set in `giode.toml`.
 
 ## Measuring performance
 
@@ -119,9 +122,9 @@ way to find stutter on a real device. Dev builds also serve Go profiles with
 `POCKET_AGENT_PPROF=localhost:6060`, and the MCP server's `frame_stats` tool reports the same
 numbers.
 
-On Android, agent runs stop soon after the app leaves the screen: Giode's `KeepAlive` needs a
-foreground service declared in the manifest, which gogio can't add yet. iOS gets about 30
-seconds to finish a reply in the background.
+While a reply or agent run is in progress the app holds Giode's `KeepAlive`: on Android a
+foreground service with an ongoing notification (declared through `android.keep_alive` in
+`giode.toml`), on iOS the roughly 30 seconds iOS allows in the background.
 
 ## Troubleshooting
 

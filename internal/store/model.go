@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mehran9675/pocket-agent/internal/llm"
+	"github.com/mehran9675/pocket-agent/internal/local"
 	"github.com/mehran9675/pocket-agent/internal/tools"
 )
 
@@ -311,11 +312,35 @@ const (
 
 // LocalSettings configure the on-device engine.
 type LocalSettings struct {
+	// ContextSize, Threads, GPULayers, Temperature and MaxTokens win over
+	// the same fields in Load and Sampling.
 	ContextSize int     `json:"contextSize"`
 	Threads     int     `json:"threads"`
 	GPULayers   int     `json:"gpuLayers"`
 	Temperature float64 `json:"temperature"`
 	MaxTokens   int     `json:"maxTokens"`
+	// Load holds the advanced engine options: batches, flash attention,
+	// KV cache types, loading.
+	Load local.LoadOptions `json:"load"`
+	// Sampling holds the samplers.
+	Sampling local.GenParams `json:"sampling"`
+}
+
+// LoadOptions are the engine options to load a model with.
+func (l LocalSettings) LoadOptions() local.LoadOptions {
+	o := l.Load
+	o.ContextSize, o.Threads, o.GPULayers = l.ContextSize, l.Threads, l.GPULayers
+	return o
+}
+
+// GenParams are the sampling settings.
+func (l LocalSettings) GenParams() local.GenParams {
+	g := l.Sampling
+	g.Temperature = float32(l.Temperature)
+	if l.MaxTokens > 0 {
+		g.MaxTokens = l.MaxTokens
+	}
+	return g
 }
 
 // Settings are the app preferences.
@@ -353,7 +378,7 @@ func DefaultSettings() *Settings {
 		AutoApprove:   map[string]bool{},
 		MemoryEnabled: true,
 		ShowReasoning: true,
-		Local:         LocalSettings{ContextSize: 4096, GPULayers: -1, Temperature: 0.7, MaxTokens: 2048},
+		Local:         LocalSettings{ContextSize: 4096, GPULayers: -1, Temperature: 0.7, MaxTokens: 2048, Sampling: local.DefaultGenParams()},
 	}
 }
 
