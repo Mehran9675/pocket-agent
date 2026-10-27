@@ -26,19 +26,23 @@ vet:
 	go vet -tags devmock ./...
 
 desktop:
+	mkdir -p $(OUT)
 	go build -tags "$(TAGS)" -o $(OUT)/pocket-agent .
 
 android:        ## APK for arm64 phones and tablets (Android 9+)
+	mkdir -p $(OUT)
 	$(GOGIO) -target android -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 28 -tags "$(TAGS)" $(if $(SIGNKEY),-signkey $(SIGNKEY) -signpass "$(SIGNPASS)",) \
 		-o $(OUT)/pocket-agent.apk .
 
 ios:            ## universal iPhone + iPad app; SIGNKEY = provisioning profile
+	mkdir -p $(OUT)
 	$(GOGIO) -target ios -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 15 -tags "$(TAGS)" $(if $(SIGNKEY),-signkey "$(SIGNKEY)",) \
 		-o $(OUT)/PocketAgent.ipa .
 
 ios-sim:        ## .app for the iOS simulator (without the on-device engine)
+	mkdir -p $(OUT)
 	$(GOGIO) -target ios -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 15 -o $(OUT)/PocketAgent.app .
 

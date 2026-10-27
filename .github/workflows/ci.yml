@@ -51,7 +51,6 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0 ndk;27.0.12077973'
-          cache: true
       - name: Install gogio
         run: go install gioui.org/cmd/gogio@latest
       - name: Use the release tag as the app version
