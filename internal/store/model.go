@@ -391,3 +391,24 @@ func (s *Settings) Provider(id string) *ProviderConfig {
 	}
 	return nil
 }
+
+// retiredAddresses are base URLs presets used to have.
+var retiredAddresses = map[string]string{
+	"together": "https://api.together.xyz/v1",
+}
+
+// dropPresetAddresses clears saved base URLs that are just a preset's
+// address, current or retired, so connections follow the preset when
+// it changes. Earlier versions saved the address even when unchanged.
+func (s *Settings) dropPresetAddresses() {
+	for _, p := range s.Providers {
+		if p.BaseURL == "" {
+			continue
+		}
+		base := strings.TrimRight(p.BaseURL, "/")
+		pre, ok := llm.PresetByID(p.Preset)
+		if (ok && base == strings.TrimRight(pre.BaseURL, "/")) || base == retiredAddresses[p.Preset] {
+			p.BaseURL = ""
+		}
+	}
+}

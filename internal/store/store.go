@@ -154,6 +154,7 @@ func (s *Store) LoadSettings() *Settings {
 	if s.vault != nil {
 		s.vault.fillKeys(st)
 	}
+	st.dropPresetAddresses()
 	return st
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -274,21 +275,23 @@ func normalizeFinish(r string) string {
 
 // Models implements Provider.
 func (p *OpenAI) Models(ctx context.Context) ([]ModelInfo, error) {
-	var out struct {
-		Data []struct {
-			ID            string `json:"id"`
-			Name          string `json:"name"`
-			ContextLength int    `json:"context_length"`
-			// SupportedParameters is OpenRouter's capability list.
-			SupportedParameters []string `json:"supported_parameters"`
-		} `json:"data"`
-	}
-	if err := getJSON(ctx, p.Name, p.base()+"/models", p.headers(), &out); err != nil {
+	var raw json.RawMessage
+	if err := getJSON(ctx, p.Name, p.base()+"/models", p.headers(), &raw); err != nil {
 		return nil, err
 	}
+	list, err := parseModelList(raw)
+	if err != nil {
+		return nil, fmt.Errorf("%s returned a model list this app can't read: %w", p.Name, err)
+	}
 	var models []ModelInfo
-	for _, m := range out.Data {
+	for _, m := range list {
+		if !chatModelType(m.Type) {
+			continue
+		}
 		name := m.Name
+		if name == "" {
+			name = m.DisplayName
+		}
 		if name == "" {
 			name = m.ID
 		}
@@ -300,4 +303,44 @@ func (p *OpenAI) Models(ctx context.Context) ([]ModelInfo, error) {
 	}
 	sort.Slice(models, func(i, j int) bool { return models[i].ID < models[j].ID })
 	return models, nil
+}
+
+// oaModel is an entry of a /models list.
+type oaModel struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	ContextLength int    `json:"context_length"`
+	// SupportedParameters is OpenRouter's capability list.
+	SupportedParameters []string `json:"supported_parameters"`
+	// Type is Together's model kind: chat, language, code, image,
+	// embedding, ...
+	Type string `json:"type"`
+	// DisplayName is Together's name for the model.
+	DisplayName string `json:"display_name"`
+}
+
+// parseModelList reads a /models response: OpenAI's {"data": [...]}
+// or the bare array Together returns.
+func parseModelList(raw json.RawMessage) ([]oaModel, error) {
+	trimmed := strings.TrimSpace(string(raw))
+	var list []oaModel
+	if strings.HasPrefix(trimmed, "[") {
+		err := json.Unmarshal(raw, &list)
+		return list, err
+	}
+	var out struct {
+		Data []oaModel `json:"data"`
+	}
+	err := json.Unmarshal(raw, &out)
+	return out.Data, err
+}
+
+// chatModelType reports whether a model of this kind can chat; servers
+// that don't say are assumed to list chat models.
+func chatModelType(t string) bool {
+	switch strings.ToLower(t) {
+	case "", "chat", "language", "code", "model":
+		return true
+	}
+	return false
 }

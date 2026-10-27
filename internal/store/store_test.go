@@ -75,3 +75,16 @@ func TestKeysInSecrets(t *testing.T) {
 		t.Fatal("keys not restored")
 	}
 }
+
+func TestDropPresetAddresses(t *testing.T) {
+	st := DefaultSettings()
+	st.Providers = []*ProviderConfig{
+		{ID: "together", Preset: "together", BaseURL: "https://api.together.xyz/v1"},
+		{ID: "groq", Preset: "groq", BaseURL: "https://api.groq.com/openai/v1/"},
+		{ID: "ollama", Preset: "ollama", BaseURL: "http://10.0.0.5:11434/v1"},
+	}
+	st.dropPresetAddresses()
+	if st.Providers[0].BaseURL != "" || st.Providers[1].BaseURL != "" || st.Providers[2].BaseURL == "" {
+		t.Fatalf("addresses: %q %q %q", st.Providers[0].BaseURL, st.Providers[1].BaseURL, st.Providers[2].BaseURL)
+	}
+}

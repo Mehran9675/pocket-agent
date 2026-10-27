@@ -57,7 +57,12 @@ func (a *App) providerBody(id string) widgets.El {
 		}
 		c.APIKey = strings.TrimSpace(keyIn.Text())
 		if showBase {
+			// Only a changed address is saved, so fixes to the preset's
+			// address reach existing connections.
 			c.BaseURL = strings.TrimSpace(baseIn.Text())
+			if strings.TrimRight(c.BaseURL, "/") == strings.TrimRight(pre.BaseURL, "/") {
+				c.BaseURL = ""
+			}
 		}
 		c.Enabled = true
 		a.saveSettings()

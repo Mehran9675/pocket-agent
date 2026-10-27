@@ -114,3 +114,15 @@ func TestThinkSplitterChunked(t *testing.T) {
 		t.Errorf("text=%q reason=%q", text, reason)
 	}
 }
+
+func TestParseModelList(t *testing.T) {
+	together := `[{"id":"meta-llama/Llama-3.3-70B-Instruct-Turbo","type":"chat","display_name":"Llama 3.3 70B","context_length":131072},{"id":"BAAI/bge-large-en-v1.5","type":"embedding"}]`
+	list, err := parseModelList([]byte(together))
+	if err != nil || len(list) != 2 || list[0].DisplayName != "Llama 3.3 70B" || chatModelType(list[1].Type) {
+		t.Fatalf("together list: %+v %v", list, err)
+	}
+	openai := `{"object":"list","data":[{"id":"gpt-5","object":"model"}]}`
+	if list, err := parseModelList([]byte(openai)); err != nil || len(list) != 1 || !chatModelType(list[0].Type) {
+		t.Fatalf("openai list: %+v %v", list, err)
+	}
+}

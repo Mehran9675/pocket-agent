@@ -98,7 +98,7 @@ var Presets = []Preset{
 		Headers: map[string]string{"HTTP-Referer": "https://github.com/mehran9675/pocket-agent", "X-Title": "Pocket Agent"},
 	},
 	{ID: "deepinfra", Name: "DeepInfra", Kind: KindOpenAI, BaseURL: "https://api.deepinfra.com/v1/openai", Group: GroupPlatforms, KeyHint: "deepinfra.com → Dashboard → API Keys", Thinking: ThinkingEffort},
-	{ID: "together", Name: "Together AI", Kind: KindOpenAI, BaseURL: "https://api.together.xyz/v1", Group: GroupPlatforms, KeyHint: "api.together.ai → Settings → API Keys"},
+	{ID: "together", Name: "Together AI", Kind: KindOpenAI, BaseURL: "https://api.together.ai/v1", Group: GroupPlatforms, KeyHint: "api.together.ai → Settings → API Keys"},
 	{ID: "groq", Name: "Groq", Kind: KindOpenAI, BaseURL: "https://api.groq.com/openai/v1", Group: GroupPlatforms, KeyHint: "console.groq.com → API Keys", Thinking: ThinkingEffort},
 	{ID: "fireworks", Name: "Fireworks AI", Kind: KindOpenAI, BaseURL: "https://api.fireworks.ai/inference/v1", Group: GroupPlatforms, KeyHint: "fireworks.ai → Settings → API Keys", Thinking: ThinkingEffort},
 	{ID: "cerebras", Name: "Cerebras", Kind: KindOpenAI, BaseURL: "https://api.cerebras.ai/v1", Group: GroupPlatforms, KeyHint: "cloud.cerebras.ai → API Keys", Thinking: ThinkingEffort},
