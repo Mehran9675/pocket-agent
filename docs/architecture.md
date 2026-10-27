@@ -82,9 +82,12 @@ Tool approval blocks the agent goroutine on a channel that the inline approval c
 
 ## Rendering
 
-Finished messages are wrapped in `giode.Memo`, keyed by message ID and rebuilt only when the
-message's version, expanded sections or theme change; only the streaming reply is rebuilt each
-frame. The message list pins itself to the
+The message list is a `giode.LazyList`: a conversation is flattened into rows (each card, tool
+group and footer, and long replies and thinking in chunks of about 2,000 characters), and only
+the rows near the viewport are built and laid out. Each row has a version (a content hash for
+text, the message's version for the rest), so rows on screen replay their cached drawing until
+they change, and while a reply streams only its last chunk is rebuilt. A `SelectionArea` around
+the list makes text select across rows and messages like a web page. The message list pins itself to the
 bottom while content grows unless the user has scrolled up.
 
 ## Responsive layout

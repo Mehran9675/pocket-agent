@@ -116,6 +116,11 @@ PA_TEST_ENGINE=build/engine/libpocketllama-linux-amd64.so PA_TEST_MODEL=model.gg
 
 ## Measuring performance
 
+Android builds go through the giode CLI, which builds against a copy of Gio patched to request
+the next frame before drawing, so animations and scrolling run at the display's full rate
+(120 Hz where available) instead of Gio's 60. The release workflow pins a CLI commit with
+that patch.
+
 Settings → About → *Show frame times* (or `POCKET_AGENT_FRAME_TIMES=1`) draws Giode's counter
 with the average frame build and render times and the frame rate, from the next launch - the
 way to find stutter on a real device. Dev builds also serve Go profiles with

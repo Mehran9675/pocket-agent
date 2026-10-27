@@ -14,7 +14,8 @@ import (
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
 
-// markdown renders text as Markdown; key identifies it for selection.
+// markdown renders text as Markdown; key identifies its chunks. Put it
+// in a SelectionArea to make it selectable.
 // Long text is rendered in separately memoized chunks (see chunkSize).
 func (a *App) markdown(key, text string) widgets.El {
 	scale := a.settings.FontScale
@@ -41,7 +42,6 @@ func (a *App) markdownChunk(key, text string, size float32) widgets.El {
 		CodeBackground: theme.T.CodeBg,
 		LinkColor:      theme.T.PrimaryText,
 		OnLink:         a.openLink,
-		Selectable:     key,
 		Gap:            12,
 	})
 }

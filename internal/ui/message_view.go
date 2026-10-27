@@ -10,10 +10,10 @@ import (
 )
 
 // messageRows lays a message out as rows for the message list.
-func (a *App) messageRows(c *store.Conversation, m *store.Message, last bool) []widgets.VRow {
+func (a *App) messageRows(c *store.Conversation, m *store.Message, last bool) []msgRow {
 	if m.Role == llm.RoleUser {
 		token := fmt.Sprint(textToken(m.Text), len(m.Attachments), m.Version, a.isRunning(c), a.textEnv())
-		return []widgets.VRow{{Key: m.ID, Token: token, Build: func() widgets.El { return a.userMessage(c, m) }}}
+		return []msgRow{{Key: m.ID, Token: token, Build: func() widgets.El { return a.userMessage(c, m) }}}
 	}
 	return a.assistantRows(c, m, last)
 }
@@ -27,4 +27,14 @@ func (a *App) expandedSig(m *store.Message) string {
 		}
 	}
 	return b.String()
+}
+
+// msgRow is one row of the message list.
+type msgRow struct {
+	// Key identifies the row; Token changes whenever its content may
+	// have, so the list rebuilds and re-measures it.
+	Key, Token string
+	// Gap is the space above the row, in dp.
+	Gap   int
+	Build func() widgets.El
 }

@@ -40,7 +40,7 @@ func (a *App) fileViewer(spec string, compact bool) widgets.El {
 		info := fmt.Sprintf("%s · %s", rel, tools.HumanBytes(int64(len(b))))
 		var body widgets.El
 		if strings.HasSuffix(strings.ToLower(rel), ".md") {
-			body = a.markdown("file/"+spec, string(b))
+			body = giode.SelectionArea("file/"+spec, a.markdown("file/"+spec, string(b)))
 		} else {
 			body = giode.Box(widgets.St{Width: -1, Padding: giode.UniformInset(14), BorderRadius: 12, Background: theme.T.CodeBg, BorderWidth: 1, BorderColor: theme.T.CodeBorder},
 				widgets.CodeText("file/"+spec, string(b), 13, theme.T.Text))

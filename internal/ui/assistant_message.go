@@ -12,13 +12,13 @@ import (
 // assistantRows lays a reply out as rows for the message list: cards,
 // each tool group, and long text and thinking in chunks, so only the
 // parts on screen are laid out (see widgets.VirtualColumn).
-func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) []widgets.VRow {
+func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) []msgRow {
 	running := a.isRunning(c)
 	// state changes with anything that may change a non-text row.
 	state := fmt.Sprint(m.Version, last, running, a.expandedSig(m), a.loadingLLM != "", a.textEnv())
-	var rows []widgets.VRow
+	var rows []msgRow
 	add := func(key, token string, build func() widgets.El) {
-		rows = append(rows, widgets.VRow{Key: m.ID + "/" + key, Token: token, Gap: 12, Build: build})
+		rows = append(rows, msgRow{Key: m.ID + "/" + key, Token: token, Gap: 12, Build: build})
 	}
 	if m.Research != nil {
 		add("research", state, func() widgets.El { return a.researchCard(m) })

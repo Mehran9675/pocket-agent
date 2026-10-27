@@ -7,7 +7,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/dop251/goja v0.0.0-20261026132650-6b6a90e51946
 	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
-	github.com/mehran9675/giode v0.1.3-alpha.1
+	github.com/mehran9675/giode v0.1.4-alpha.1
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.48.0
 )
@@ -30,6 +30,7 @@ require (
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/invopop/jsonschema v0.14.0 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
+	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -41,7 +42,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.33.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect

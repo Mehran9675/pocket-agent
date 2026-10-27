@@ -1,16 +1,17 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/components/scroll"
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
 
 type chatView struct {
-	a    *App
-	list *scroll.Scroll
-	// rows lays out only the messages in view.
-	rows *widgets.VirtualColumn
+	a *App
+	// list builds only the rows on screen; rows are this frame's.
+	list *giode.LazyListElement
+	rows []msgRow
 	// jumpToBottom scrolls to the newest message on the next frame.
 	jumpToBottom bool
 }
@@ -19,10 +20,14 @@ func newChatView(a *App) *chatView {
 	v := &chatView{a: a}
 	// Anchored to the bottom: follows a streaming reply until the user
 	// scrolls up, and resumes when they scroll back down.
-	v.list = giode.Scroll(func() widgets.El { return v.messages() },
-		widgets.St{ScrollBar: scrollBar()}).
-		Anchor(giode.AnchorBottom)
-	v.rows = widgets.NewVirtualColumn(v.list)
+	v.list = giode.LazyList(
+		func() int { return len(v.rows) },
+		func(i int) any { return v.rows[i].Key },
+		func(i int) giode.Element { return v.row(i) },
+		widgets.St{ScrollBar: scrollBar()},
+	).
+		Version(func(i int) any { return fmt.Sprint(v.rows[i].Token, "|", v.rows[i].Gap, "|", i == len(v.rows)-1) }).
+		Anchor(giode.LazyAnchorBottom)
 	return v
 }
 
@@ -42,30 +47,41 @@ func (v *chatView) view(compact bool) widgets.El {
 	)
 }
 
-// listView lays out the message scroll.
+// listView lays out the message list. Text across messages selects as
+// one, like a web page.
 func (v *chatView) listView() widgets.El {
+	v.rows = v.messageRows()
 	if v.jumpToBottom {
 		v.jumpToBottom = false
 		v.list.ScrollToBottom()
 	}
-	return v.list
+	return giode.SelectionArea("chat/"+v.a.current.ID, giode.Box(widgets.St{Width: -1, FlexGrow: 1, FlexDirection: giode.FlexDirectionColumn}, v.list))
 }
 
-func (v *chatView) messages() widgets.El {
+// messageRows flattens the conversation into list rows.
+func (v *chatView) messageRows() []msgRow {
 	a := v.a
 	c := a.current
-	if c == nil {
-		return giode.Box(widgets.St{})
-	}
-	var rows []widgets.VRow
+	var rows []msgRow
 	for i, m := range c.Messages {
 		mr := a.messageRows(c, m, i == len(c.Messages)-1)
-		if len(mr) > 0 && i > 0 {
+		if len(mr) > 0 {
 			mr[0].Gap = 22 // between messages
+			if i == 0 {
+				mr[0].Gap = 8
+			}
 		}
 		rows = append(rows, mr...)
 	}
-	v.rows.SetRows(rows)
-	return giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Left: 16, Right: 16, Top: 8, Bottom: 24}},
-		widgets.Centered(780, v.rows))
+	return rows
+}
+
+// row lays out row i in the reading column.
+func (v *chatView) row(i int) giode.Element {
+	r := v.rows[i]
+	pad := giode.Inset{Left: 16, Right: 16, Top: r.Gap}
+	if i == len(v.rows)-1 {
+		pad.Bottom = 24
+	}
+	return giode.Box(widgets.St{Width: -1, Padding: pad}, widgets.Centered(780, r.Build()))
 }
