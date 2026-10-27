@@ -165,6 +165,8 @@ jobs:
 
   release:
     needs: [android, ios]
+    # Attach whatever built, so one failing platform doesn't block the other.
+    if: ${{ !cancelled() && (needs.android.result == 'success' || needs.ios.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Collect build artifacts
