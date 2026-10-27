@@ -43,5 +43,26 @@ func (a *App) reasoningBlock(m *store.Message, idx int, text string, active bool
 	return widgets.Col(widgets.St{Gap: 6, Width: -1}, header,
 		widgets.Row(widgets.St{Gap: 12, Align: giode.AlignStart, Padding: giode.Inset{Left: 12}},
 			giode.Box(widgets.St{Width: 2, Height: -1, MinHeight: 16, Background: theme.T.Border}),
-			giode.Box(widgets.St{FlexGrow: 1}, giode.Text(strings.TrimSpace(text), widgets.St{FontSize: theme.SizeFootnote, Color: theme.T.Muted, LineHeight: 20}))))
+			giode.Box(widgets.St{FlexGrow: 1}, plainChunks(key, strings.TrimSpace(text), widgets.St{FontSize: theme.SizeFootnote, Color: theme.T.Muted, LineHeight: 20}, false))))
+}
+
+// plainChunks renders long plain text in separately memoized chunks
+// (see chunkSize), optionally selectable.
+func plainChunks(key, text string, st widgets.St, selectable bool) widgets.El {
+	chunks := splitPlain(text, chunkSize)
+	render := func(i int, s string) widgets.El {
+		t := giode.Text(s, st)
+		if selectable {
+			t = t.Selectable(fmt.Sprintf("%s/%d", key, i))
+		}
+		return t
+	}
+	if len(chunks) == 1 {
+		return render(0, text)
+	}
+	kids := make([]widgets.El, len(chunks))
+	for i, chunk := range chunks {
+		kids[i] = giode.Memo(fmt.Sprintf("txt/%s/%d", key, i), func() widgets.El { return render(i, chunk) }, chunk)
+	}
+	return widgets.Col(widgets.St{Width: -1}, kids...)
 }

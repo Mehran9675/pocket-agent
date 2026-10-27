@@ -22,7 +22,7 @@ func (a *App) userMessage(c *store.Conversation, m *store.Message) widgets.El {
 		kids = append(kids, giode.Box(widgets.St{
 			Padding: giode.SymmetricInset(16, 11), BorderRadius: 20, Background: theme.T.UserBubble,
 			BorderRadii: giode.Corners{TopLeft: 20, TopRight: 20, BottomLeft: 20, BottomRight: 6},
-		}, giode.Text(m.Text, widgets.St{FontSize: theme.SizeBody, Color: theme.T.Text, LineHeight: 22}).Selectable("u/text/"+m.ID)))
+		}, plainChunks("u/text/"+m.ID, m.Text, widgets.St{FontSize: theme.SizeBody, Color: theme.T.Text, LineHeight: 22}, true)))
 	}
 	running := a.isRunning(c)
 	actions := widgets.Row(widgets.St{Gap: 0},
