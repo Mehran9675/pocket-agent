@@ -42,8 +42,8 @@ dozens of sources and writes a cited report. Written in Go with
 
 - Streaming Markdown: headings, lists, task lists, tables, quotes, links, code blocks with
   copy; visible **thinking** for reasoning models (Claude, Gemini, DeepSeek, Qwen3 `<think>`).
-- **Voice input** on Android (system speech recognition).
-- **Attachments**: photos from the library or camera (Android) for vision models, and documents - PDF, Word,
+- **Voice input** on Android and iOS (system speech recognition).
+- **Attachments**: photos from the library or camera for vision models, and documents - PDF, Word,
   Excel, PowerPoint, HTML, Markdown, CSV, JSON, code - extracted to text on the device.
 - **Tools** the model can call: web search, read web page, calculator, date/time, a JavaScript
   sandbox, reading long attachments, long-term memory. Per-tool permissions with inline

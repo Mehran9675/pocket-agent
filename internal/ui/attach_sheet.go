@@ -16,7 +16,7 @@ func (a *App) openAttachSheet() {
 					a.closeSheet()
 					a.pickPhoto(giode.PhotoLibrary)
 				}),
-				widgets.When(runtime.GOOS == "android", func() widgets.El {
+				widgets.When(runtime.GOOS == "android" || runtime.GOOS == "ios", func() widgets.El {
 					return widgets.ListRow("attach/camera", "camera", "#f472b6", "Take a photo", "Use the camera", nil, func() {
 						a.closeSheet()
 						a.pickPhoto(giode.Camera)

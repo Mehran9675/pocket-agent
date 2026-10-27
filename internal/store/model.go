@@ -332,6 +332,8 @@ type Settings struct {
 	MemoryEnabled bool            `json:"memoryEnabled"`
 	Instructions  string          `json:"instructions"`
 	ShowReasoning bool            `json:"showReasoning"`
+	// FrameTimes shows Giode's frame time counter (from the next launch).
+	FrameTimes bool `json:"frameTimes,omitempty"`
 	// Thinking is the level new chats start with: the last one chosen.
 	Thinking   llm.Thinking      `json:"thinking,omitempty"`
 	Local      LocalSettings     `json:"local"`

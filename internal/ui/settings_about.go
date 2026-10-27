@@ -19,6 +19,14 @@ func (a *App) aboutBody() widgets.El {
 			widgets.ListRow("about/fonts", "pen-line", theme.T.Muted, "Inter & JetBrains Mono", "SIL Open Font License", nil, nil),
 			widgets.ListRow("about/icons", "star", theme.T.Muted, "Lucide icons", "ISC License", nil, nil),
 		),
+		widgets.Group(
+			widgets.ListRow("about/frames", "gauge", theme.T.Muted, "Show frame times", "Build and render time and frame rate in the corner, from the next launch",
+				widgets.Toggle("about/frames/t", a.settings.FrameTimes, func(v bool) {
+					a.settings.FrameTimes = v
+					a.saveSettings()
+					a.toast(giode.ToastInfo, "Restart Pocket Agent to "+ifStr(v, "show", "hide")+" frame times")
+				}), nil),
+		),
 		widgets.Text("Your conversations, keys and files stay on this device. Messages go only to the model provider you choose.", theme.SizeCaption, theme.T.Muted),
 	)
 }

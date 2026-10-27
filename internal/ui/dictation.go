@@ -12,8 +12,8 @@ import (
 )
 
 // dictationSupported reports whether speech input is available (Giode
-// implements it on Android).
-func dictationSupported() bool { return runtime.GOOS == "android" }
+// implements it on Android and iOS).
+func dictationSupported() bool { return runtime.GOOS == "android" || runtime.GOOS == "ios" }
 
 // micButton starts and stops dictation into the composer.
 func (c *composer) micButton() widgets.El {

@@ -50,6 +50,10 @@ make ios SIGNKEY=/path/to/PocketAgent.mobileprovision
 
 - `APPID` must match the provisioning profile (`make ios APPID=com.example.pocketagent ...`).
 - `make ios-sim` builds a simulator `.app` (without the on-device engine).
+- Both targets run `scripts/ios-plist.sh`, which adds the camera, microphone and speech
+  recognition usage descriptions iOS requires for photo attachments and dictation (gogio
+  can't add Info.plist keys) and re-signs the app - ad hoc for the simulator, with
+  `SIGN_IDENTITY` (default: the first code signing identity in the keychain) for the `.ipa`.
 - Install the `.ipa` with Xcode (Devices and Simulators), Apple Configurator or `xcrun devicectl`.
 
 ## On-device engine (llama.cpp)
@@ -106,6 +110,18 @@ PA_TEST_ENGINE=build/engine/libpocketllama-linux-amd64.so PA_TEST_MODEL=model.gg
 
 `assets/appicon.png` (1024×1024, full-bleed - the OS applies its own mask) is passed to gogio
 with `-icon`. The display name comes from `NAME` in the Makefile.
+
+## Measuring performance
+
+Settings → About → *Show frame times* (or `POCKET_AGENT_FRAME_TIMES=1`) draws Giode's counter
+with the average frame build and render times and the frame rate, from the next launch - the
+way to find stutter on a real device. Dev builds also serve Go profiles with
+`POCKET_AGENT_PPROF=localhost:6060`, and the MCP server's `frame_stats` tool reports the same
+numbers.
+
+On Android, agent runs stop soon after the app leaves the screen: Giode's `KeepAlive` needs a
+foreground service declared in the manifest, which gogio can't add yet. iOS gets about 30
+seconds to finish a reply in the background.
 
 ## Troubleshooting
 

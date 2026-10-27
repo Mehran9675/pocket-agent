@@ -45,6 +45,8 @@ func main() {
 		MinSize:    image.Pt(360, 560),
 		Resizable:  true,
 		Background: "theme.background",
+		// POCKET_AGENT_FRAME_TIMES=1 shows it without the setting.
+		ShowFrameTimes: settings.FrameTimes || os.Getenv("POCKET_AGENT_FRAME_TIMES") != "",
 		OnBackground: func() {
 			if pa != nil {
 				pa.Backgrounded()

@@ -44,12 +44,14 @@ ios:            ## universal iPhone + iPad app; SIGNKEY = provisioning profile
 	$(GOGIO) -target ios -arch arm64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 15 -tags "$(TAGS)" $(if $(SIGNKEY),-signkey "$(SIGNKEY)",) \
 		-o $(OUT)/PocketAgent.ipa .
+	scripts/ios-plist.sh $(OUT)/PocketAgent.ipa
 
 ios-sim:        ## .app for the iOS simulator (without the on-device engine)
 	mkdir -p $(OUT)
 	# gogio builds simulator apps for Intel only; they run on Apple silicon Macs too.
 	$(GOGIO) -target ios -arch amd64 -appid $(APPID) -name "$(NAME)" -version $(VERSION) \
 		-icon $(ICON) -minsdk 15 -o $(OUT)/PocketAgent.app .
+	scripts/ios-plist.sh $(OUT)/PocketAgent.app
 
 engine:         ## the on-device engine for this computer
 	scripts/build-engine.sh $(if $(filter Darwin,$(shell uname -s)),darwin,linux)
