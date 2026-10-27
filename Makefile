@@ -8,7 +8,9 @@ export GIODE ?= giode
 
 # iOS only: set LLAMA=1 to compile the on-device engine into the app (run
 # scripts/build-llama.sh ios first). Android and desktops download it.
-TAGS := $(if $(LLAMA),llama,)
+TAGS := $(strip $(if $(LLAMA),llama,) $(GOTAGS))
+
+# GOTAGS adds Go build tags, e.g. GOTAGS=noopengl to make Gio render with Vulkan on Android.
 
 # A locally built engine for desktop runs (make engine).
 HOST_ENGINE = $(firstword $(wildcard $(OUT)/engine/libpocketllama-linux-*.so $(OUT)/engine/libpocketllama-darwin-*.dylib))
@@ -34,7 +36,7 @@ desktop:
 
 android:        ## APK for arm64 phones and tablets (Android 9+); SIGNKEY/SIGNPASS for a release keystore
 	mkdir -p $(OUT)
-	VERSION=$(VERSION) KEYSTORE=$(SIGNKEY) GIODE_KEYSTORE_PASS="$(SIGNPASS)" \
+	VERSION=$(VERSION) TAGS="$(TAGS)" KEYSTORE=$(SIGNKEY) GIODE_KEYSTORE_PASS="$(SIGNPASS)" \
 		scripts/giode-build.sh -o $(OUT)/pocket-agent.apk android
 
 ios:            ## universal iPhone + iPad app; SIGNKEY = provisioning profile
