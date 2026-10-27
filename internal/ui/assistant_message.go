@@ -17,8 +17,13 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 	// state changes with anything that may change a non-text row.
 	state := fmt.Sprint(m.Version, last, running, a.expandedSig(m), a.loadingLLM != "", a.textEnv())
 	var rows []msgRow
-	add := func(key, token string, build func() widgets.El) {
+	// Only the reply's own text can be selected; add wraps interface
+	// rows (cards, statuses, the footer) to keep them out.
+	addText := func(key, token string, build func() widgets.El) {
 		rows = append(rows, msgRow{Key: m.ID + "/" + key, Token: token, Gap: 12, Build: build})
+	}
+	add := func(key, token string, build func() widgets.El) {
+		addText(key, token, func() widgets.El { return widgets.Unselectable(build()) })
 	}
 	if m.Research != nil {
 		add("research", state, func() widgets.El { return a.researchCard(m) })
@@ -33,11 +38,11 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 		b := m.Blocks[i]
 		switch b.Kind {
 		case store.BlockReasoning:
-			a.reasoningRows(m, i, b.Text, m.Streaming && i == len(m.Blocks)-1, add)
+			a.reasoningRows(m, i, b.Text, m.Streaming && i == len(m.Blocks)-1, add, addText)
 		case store.BlockText:
 			for j, chunk := range splitMarkdown(b.Text, chunkSize) {
 				key := fmt.Sprintf("t%d/%d", i, j)
-				add(key, textToken(chunk)+a.textEnv(), func() widgets.El { return a.markdownChunk(m.ID+"/"+key, chunk, size) })
+				addText(key, textToken(chunk)+a.textEnv(), func() widgets.El { return a.markdownChunk(m.ID+"/"+key, chunk, size) })
 			}
 		case store.BlockTool:
 			start := i

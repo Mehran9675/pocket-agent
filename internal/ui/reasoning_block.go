@@ -12,7 +12,7 @@ import (
 
 // reasoningRows adds a thinking block's rows: its header (with the
 // latest line while thinking) and, when expanded, the text in chunks.
-func (a *App) reasoningRows(m *store.Message, idx int, text string, active bool, add func(key, token string, build func() widgets.El)) {
+func (a *App) reasoningRows(m *store.Message, idx int, text string, active bool, add, addText func(key, token string, build func() widgets.El)) {
 	key := fmt.Sprintf("%s/think/%d", m.ID, idx)
 	open := a.expanded[key]
 	label := "Thought process"
@@ -50,7 +50,7 @@ func (a *App) reasoningRows(m *store.Message, idx int, text string, active bool,
 	st := widgets.St{FontSize: theme.SizeFootnote, Color: theme.T.Muted, LineHeight: 20}
 	for j, chunk := range splitPlain(strings.TrimSpace(text), chunkSize) {
 		rows := fmt.Sprintf("think%d/%d", idx, j)
-		add(rows, textToken(chunk)+a.textEnv(), func() widgets.El {
+		addText(rows, textToken(chunk)+a.textEnv(), func() widgets.El {
 			return widgets.Row(widgets.St{Gap: 12, Align: giode.AlignStart, Padding: giode.Inset{Left: 12}, Width: -1},
 				giode.Box(widgets.St{Width: 2, Height: -1, MinHeight: 16, Background: theme.T.Border}),
 				giode.Box(widgets.St{FlexGrow: 1}, giode.Text(chunk, st)))

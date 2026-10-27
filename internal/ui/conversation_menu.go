@@ -17,6 +17,7 @@ func (a *App) openConversationMenu(c *store.Conversation) {
 			widgets.Group(
 				widgets.ListRow("cm/rename", "pencil", theme.T.Primary, "Rename", "", nil, func() { a.openRename(c) }),
 				widgets.ListRow("cm/pin", "pin", theme.T.Primary, pinLabel, "", nil, func() { a.closeSheet(); a.togglePin(c) }),
+				widgets.ListRow("cm/folder", "folder-input", theme.T.Primary, "Move to folder", folderName(a, c), nil, func() { a.openMoveToFolder(c) }),
 				widgets.ListRow("cm/system", "sliders-horizontal", theme.T.Primary, "Instructions for this chat", "Override the system prompt", nil, func() { a.openSystemPrompt(c) }),
 			),
 			widgets.Group(

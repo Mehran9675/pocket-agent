@@ -52,6 +52,7 @@ dozens of sources and writes a cited report. Written in Go with
   sandbox, reading long attachments, long-term memory. Per-tool permissions with inline
   *Allow once / Always allow / Deny* approval.
 - **MCP servers** (Streamable HTTP) add remote tools to chats and agents.
+- A full-screen editor for long messages; folders for conversations (one level).
 - Regenerate, edit and resend, copy, share, export to Markdown, rename, pin, search, per-chat
   system prompt, automatic titles, token, tokens-per-second and time stats.
 
@@ -61,6 +62,9 @@ dozens of sources and writes a cited report. Written in Go with
   your own: icon, color, instructions, tools, step limit, approval policy, starter prompts.
 - Agents keep a live **plan checklist**, use tools autonomously and write deliverables to a
   per-conversation **workspace** you can open, copy and share.
+- Each task has a step limit and a token budget; an agent that reaches either pauses with a
+  **Continue** button. Older tool results are trimmed in the context it resends, so long
+  tasks don't grow quadratically in cost.
 
 **Deep research**
 

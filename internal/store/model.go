@@ -74,6 +74,9 @@ type Conversation struct {
 	Mode    Mode      `json:"mode"`
 	AgentID string    `json:"agentId,omitempty"`
 	Pinned  bool      `json:"pinned,omitempty"`
+	// Folder is the ID of the folder the conversation is in, "" for
+	// none. Folders hold conversations only, one level deep.
+	Folder string `json:"folder,omitempty"`
 	// System overrides the default instructions for this thread.
 	System string `json:"system,omitempty"`
 	// WebSearch offers web tools in chat mode.
@@ -365,6 +368,8 @@ type Settings struct {
 	ShowReasoning bool            `json:"showReasoning"`
 	// FrameTimes shows Giode's frame time counter (from the next launch).
 	FrameTimes bool `json:"frameTimes,omitempty"`
+	// Folders group conversations in the sidebar, in display order.
+	Folders []*Folder `json:"folders,omitempty"`
 	// Thinking is the level new chats start with: the last one chosen.
 	Thinking   llm.Thinking      `json:"thinking,omitempty"`
 	Local      LocalSettings     `json:"local"`
@@ -429,4 +434,22 @@ func (a *Agent) Budget() int {
 		return DefaultTokenBudget * 1000
 	}
 	return a.TokenBudget * 1000
+}
+
+// Folder groups conversations in the sidebar.
+type Folder struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Collapsed hides its conversations in the sidebar.
+	Collapsed bool `json:"collapsed,omitempty"`
+}
+
+// Folder returns the folder with id, or nil.
+func (s *Settings) Folder(id string) *Folder {
+	for _, f := range s.Folders {
+		if f.ID == id {
+			return f
+		}
+	}
+	return nil
 }
