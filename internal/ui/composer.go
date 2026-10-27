@@ -238,12 +238,18 @@ func (c *composer) view(compact bool) widgets.El {
 		c.in,
 		widgets.Row(widgets.St{Width: -1, Gap: 6}, append(tools, widgets.Spacer(), action)...),
 	)
-	box := giode.Box(widgets.St{
+	st := widgets.St{
 		FlexDirection: giode.FlexDirectionColumn, Width: -1, Gap: 6,
 		Background: theme.T.Surface, BorderRadius: 24, BorderWidth: 1, BorderColor: theme.T.BorderStrong,
-		Padding:   giode.Inset{Top: 10, Left: 12, Right: 10, Bottom: 10},
-		BoxShadow: giode.BoxShadow{Y: 6, Blur: 24, Color: theme.T.Shadow},
-	}, boxKids...)
+		Padding: giode.Inset{Top: 10, Left: 12, Right: 10, Bottom: 10},
+	}
+	// A blurred shadow is drawn as one translucent layer per dp of blur,
+	// all redrawn every frame; keep it small, and skip it in dark mode
+	// where it barely shows.
+	if !theme.T.Dark {
+		st.BoxShadow = giode.BoxShadow{Y: 2, Blur: 6, Color: theme.T.Shadow}
+	}
+	box := giode.Box(st, boxKids...)
 	hint := "Pocket Agent can make mistakes. Check important info."
 	if a.loadingLLM != "" {
 		hint = "Loading the on-device model…"

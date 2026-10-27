@@ -18,7 +18,9 @@ func (a *App) View() widgets.El {
 	if a.route != "" {
 		giode.HandleBack(a.back)
 	}
-	return giode.Box(widgets.St{Width: -1, Height: -1, Background: theme.T.Bg, FlexDirection: giode.FlexDirectionColumn},
+	// No background: the window paints theme.background already, and a
+	// second full-screen fill costs GPU time every frame.
+	return giode.Box(widgets.St{Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn},
 		body,
 		a.overlays(),
 		a.toasts,
