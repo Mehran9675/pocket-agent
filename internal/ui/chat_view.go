@@ -18,7 +18,7 @@ func newChatView(a *App) *chatView {
 	// Anchored to the bottom: follows a streaming reply until the user
 	// scrolls up, and resumes when they scroll back down.
 	v.list = giode.Scroll(func() widgets.El { return v.messages() },
-		widgets.St{ScrollBar: giode.ScrollBar{Width: 4, ThumbColor: "theme.border", Radius: 2}}).
+		widgets.St{ScrollBar: scrollBar()}).
 		Anchor(giode.AnchorBottom)
 	return v
 }
