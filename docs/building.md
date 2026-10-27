@@ -116,10 +116,9 @@ PA_TEST_ENGINE=build/engine/libpocketllama-linux-amd64.so PA_TEST_MODEL=model.gg
 
 ## Measuring performance
 
-Android builds run against a copy of Gio patched to request the next frame before drawing, so
-animations and scrolling run at the display's full rate (120 Hz where available) instead of
-Gio's 60. `scripts/gio-patch.py` makes the copy and `scripts/giode-build.sh` points `go.mod` at
-it for the build (`GIO_PATCHES=false` builds against plain Gio).
+The giode CLI builds Android apps against a copy of Gio patched to request the next frame
+before drawing, so animations and scrolling run at the display's full rate (120 Hz where
+available) instead of Gio's 60 (`android.gio_patches` in `giode.toml`; on by default).
 
 Settings → About → *Show frame times* (or `POCKET_AGENT_FRAME_TIMES=1`) draws Giode's counter
 with the average frame build and render times and the frame rate, from the next launch - the
