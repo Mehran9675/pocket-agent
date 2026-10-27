@@ -1,6 +1,7 @@
 name: Release
 
 # Builds the project and attaches the files to the published GitHub release:
+# Both mobile builds include the llama.cpp on-device engine.
 #   - Android APK (arm64, Android 9+), signed with a release keystore when
 #     ANDROID_KEYSTORE_BASE64/ANDROID_KEYSTORE_PASS secrets are set, otherwise
 #     with the debug keystore
@@ -35,6 +36,8 @@ jobs:
   android:
     needs: test
     runs-on: ubuntu-latest
+    env:
+      LLAMA: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -62,6 +65,20 @@ jobs:
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_ROOT=$SDK/ndk/27.0.12077973" >> "$GITHUB_ENV"
+      - name: Cache llama.cpp libraries
+        uses: actions/cache@v4
+        with:
+          path: third_party/lib/android_arm64
+          key: llama-android-${{ hashFiles('scripts/build-llama.sh') }}
+      - name: Build the on-device engine (llama.cpp)
+        run: |
+          if [ ! -f third_party/lib/android_arm64/libllama.a ]; then
+            scripts/build-llama.sh android
+          else
+            # cgo still needs the headers.
+            git clone --filter=blob:none https://github.com/ggml-org/llama.cpp third_party/llama.cpp
+            git -C third_party/llama.cpp checkout -q "$(sed -n 's/^LLAMA_COMMIT=${LLAMA_COMMIT:-\(.*\)}$/\1/p' scripts/build-llama.sh)"
+          fi
       - name: Detect signing keystore
         id: signing
         env:
@@ -119,8 +136,13 @@ jobs:
           security default-keychain -s build.keychain
           security import "$CERT_PATH" -k build.keychain -P "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+      - name: Build the on-device engine (llama.cpp)
+        if: steps.signing.outputs.has == 'true'
+        run: scripts/build-llama.sh ios
       - name: Build iOS/iPadOS .ipa (signed)
         if: steps.signing.outputs.has == 'true'
+        env:
+          LLAMA: 1
         run: |
           if [ -n "${{ secrets.APPLE_APPID }}" ]; then
             make ios SIGNKEY="$RUNNER_TEMP/profile.mobileprovision" APPID="${{ secrets.APPLE_APPID }}"
