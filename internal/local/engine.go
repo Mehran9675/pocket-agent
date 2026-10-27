@@ -58,8 +58,11 @@ type Stats struct {
 
 // Engine is an inference backend holding at most one loaded model.
 type Engine interface {
-	// Available reports whether the engine is compiled in.
+	// Available reports whether the engine is compiled in and can run
+	// on this device.
 	Available() bool
+	// Problem explains why Available is false.
+	Problem() string
 	// Load loads the GGUF file at path, replacing any loaded model.
 	Load(path string, opts LoadOptions) error
 	// Loaded returns the path of the loaded model, "" if none.

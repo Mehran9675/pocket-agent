@@ -39,8 +39,8 @@ func (a *App) engineBody() widgets.El {
 	}
 	if !a.engine.Available() {
 		return widgets.Card(widgets.St{},
-			widgets.Row(widgets.St{Gap: 10}, widgets.Icon("triangle-alert", 18, theme.T.Warning), widgets.Text("On-device engine not included", theme.SizeCallout, theme.T.Text, giode.FontWeightBold)),
-			widgets.Text("This build was made without llama.cpp. Build with the llama tag (see docs/building.md) to run models on the device, or connect Ollama / LM Studio on your network.", theme.SizeFootnote, theme.T.Text2))
+			widgets.Row(widgets.St{Gap: 10}, widgets.Icon("triangle-alert", 18, theme.T.Warning), widgets.Text("On-device engine unavailable", theme.SizeCallout, theme.T.Text, giode.FontWeightBold)),
+			widgets.Text(a.engine.Problem(), theme.SizeFootnote, theme.T.Text2))
 	}
 	return widgets.Col(widgets.St{Gap: 16, Width: -1},
 		widgets.Card(widgets.St{},

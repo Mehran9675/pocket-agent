@@ -5,8 +5,8 @@ package local
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../third_party/llama.cpp/include -I${SRCDIR}/../../third_party/llama.cpp/ggml/include -O2
 #cgo linux,!android LDFLAGS: -L${SRCDIR}/../../third_party/lib/linux -lllama -lggml -lggml-cpu -lggml-base -lstdc++ -lm -lpthread
-#cgo android,arm64 LDFLAGS: -L${SRCDIR}/../../third_party/lib/android_arm64 -lllama -lggml -lggml-cpu -lggml-base -lc++_static -lc++abi -lm -landroid -llog
-#cgo android,amd64 LDFLAGS: -L${SRCDIR}/../../third_party/lib/android_amd64 -lllama -lggml -lggml-cpu -lggml-base -lc++_static -lc++abi -lm -landroid -llog
+#cgo android,arm64 LDFLAGS: -L${SRCDIR}/../../third_party/lib/android_arm64 -lllama -lggml -lggml-cpu -lggml-base -lc++_static -lc++abi -lm -landroid -llog -Wl,-z,max-page-size=16384
+#cgo android,amd64 LDFLAGS: -L${SRCDIR}/../../third_party/lib/android_amd64 -lllama -lggml -lggml-cpu -lggml-base -lc++_static -lc++abi -lm -landroid -llog -Wl,-z,max-page-size=16384
 #cgo ios,arm64 LDFLAGS: -L${SRCDIR}/../../third_party/lib/ios_arm64 -lllama -lggml -lggml-cpu -lggml-metal -lggml-blas -lggml-base -lc++ -framework Foundation -framework Metal -framework MetalKit -framework Accelerate
 #cgo darwin,!ios LDFLAGS: -L${SRCDIR}/../../third_party/lib/darwin -lllama -lggml -lggml-cpu -lggml-metal -lggml-blas -lggml-base -lc++ -framework Foundation -framework Metal -framework MetalKit -framework Accelerate
 
@@ -52,16 +52,26 @@ type llamaEngine struct {
 }
 
 // NewEngine returns the llama.cpp engine.
+// It touches no native code until a model is loaded, so a problem in
+// the engine can never stop the app from starting.
 func NewEngine() Engine {
+	return &llamaEngine{}
+}
+
+// initBackend starts llama.cpp once, on first use.
+func (e *llamaEngine) initBackend() {
 	backendOnce.Do(func() {
 		C.llama_log_set(C.ggml_log_callback(C.pa_quiet), nil)
 		C.llama_backend_init()
 	})
-	e := &llamaEngine{abort: (*C.int)(C.calloc(1, C.size_t(unsafe.Sizeof(C.int(0)))))}
-	return e
+	if e.abort == nil {
+		e.abort = (*C.int)(C.calloc(1, C.size_t(unsafe.Sizeof(C.int(0)))))
+	}
 }
 
-func (e *llamaEngine) Available() bool { return true }
+func (e *llamaEngine) Available() bool { return cpuProblem() == "" }
+
+func (e *llamaEngine) Problem() string { return cpuProblem() }
 
 func (e *llamaEngine) Loaded() string {
 	e.mu.Lock()
@@ -81,6 +91,10 @@ func (e *llamaEngine) Load(path string, opts LoadOptions) error {
 	if e.path == path && e.model != nil {
 		return nil
 	}
+	if p := cpuProblem(); p != "" {
+		return errors.New(p)
+	}
+	e.initBackend()
 	e.unloadLocked()
 
 	mp := C.llama_model_default_params()

@@ -19,11 +19,7 @@ import (
 )
 
 func main() {
-	dir, err := dataDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	st, err := store.Open(dir)
+	st, err := openStore()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,6 +54,20 @@ func main() {
 	if err := win.Run(pa.View); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// openStore opens the data directory, falling back to the system temp
+// directory so the app still starts if the usual location is unusable.
+func openStore() (*store.Store, error) {
+	dir, err := dataDir()
+	if err == nil {
+		var st *store.Store
+		if st, err = store.Open(dir); err == nil {
+			return st, nil
+		}
+	}
+	log.Printf("pocket-agent: data directory unavailable (%v); using a temporary one", err)
+	return store.Open(filepath.Join(os.TempDir(), "pocket-agent"))
 }
 
 // dataDir is the app's private storage: the app sandbox on iOS and

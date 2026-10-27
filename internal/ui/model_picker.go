@@ -98,7 +98,7 @@ func (a *App) modelList(query string) widgets.El {
 		if len(localRows) == 0 {
 			sub := "Download a model to chat offline"
 			if !a.engine.Available() {
-				sub = "This build has no on-device engine"
+				sub = "Not available on this device"
 			}
 			localRows = append(localRows, widgets.ListRow("models/getlocal", "download", "#34d399", "Get an on-device model", sub, nil, func() {
 				a.closeSheet()

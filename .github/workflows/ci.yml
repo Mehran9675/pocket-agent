@@ -86,17 +86,25 @@ jobs:
       - name: Decode signing keystore
         if: steps.signing.outputs.has == 'true'
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.keystore"
-      - name: Build APK (debug-signed)
-        if: steps.signing.outputs.has != 'true'
-        run: make android
-      - name: Build APK (release-signed)
-        if: steps.signing.outputs.has == 'true'
-        run: make android SIGNKEY="$RUNNER_TEMP/release.keystore" SIGNPASS="${{ secrets.ANDROID_KEYSTORE_PASS }}"
+      - name: Build APKs
+        env:
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: |
+          SIGN=()
+          if [ "${{ steps.signing.outputs.has }}" = "true" ]; then
+            SIGN=(SIGNKEY="$RUNNER_TEMP/release.keystore" SIGNPASS="$KEYSTORE_PASS")
+          fi
+          # Lite: no on-device engine, for older phones.
+          make android LLAMA= "${SIGN[@]}"
+          mv build/pocket-agent.apk build/pocket-agent-lite.apk
+          make android "${SIGN[@]}"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android
-          path: build/pocket-agent.apk
+          path: |
+            build/pocket-agent.apk
+            build/pocket-agent-lite.apk
           if-no-files-found: error
 
   ios:

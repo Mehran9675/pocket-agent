@@ -32,14 +32,14 @@ func (a *App) libraryBody() widgets.El {
 				widgets.Text("Private by design", theme.SizeHeadline, theme.T.Text, giode.FontWeightBold),
 				widgets.Text("On-device models run entirely on this "+deviceNoun()+". Nothing you type leaves it, and they work offline.", theme.SizeFootnote, theme.T.Text2))),
 		widgets.Row(widgets.St{Gap: 16},
-			stat("Memory", ram), stat("Engine", ifStr(a.engine.Available(), "llama.cpp", "Not built in")),
+			stat("Memory", ram), stat("Engine", ifStr(a.engine.Available(), "llama.cpp", "Unavailable")),
 			stat("Installed", fmt.Sprint(len(a.models.Installed())))),
 	)
 	kids = append(kids, header)
 	if !a.engine.Available() {
 		kids = append(kids, widgets.Row(widgets.St{Gap: 10, Padding: giode.UniformInset(12), BorderRadius: 12, Background: theme.T.WarningSoft, Width: -1, Align: giode.AlignStart},
 			widgets.Icon("triangle-alert", 18, theme.T.Warning),
-			giode.Box(widgets.St{FlexGrow: 1}, widgets.Text("This build doesn't include the on-device engine, so downloaded models can't run yet. Rebuild with -tags llama (docs/building.md) or use Ollama / LM Studio on your network.", theme.SizeFootnote, theme.T.Text))))
+			giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(a.engine.Problem(), theme.SizeFootnote, theme.T.Text))))
 	}
 
 	// Downloads in progress
