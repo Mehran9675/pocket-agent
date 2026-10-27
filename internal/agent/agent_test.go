@@ -3,6 +3,9 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,5 +107,50 @@ func TestAssistantMessagesSequence(t *testing.T) {
 	}
 	if len(got[0].ToolCalls) != 2 || got[0].Text() != "Let me look." || !got[2].IsError || got[3].Text() != "Answer." {
 		t.Fatalf("%+v", got)
+	}
+}
+
+// looping calls the calculator forever, using 1000 tokens a call.
+type looping struct{ calls int }
+
+func (*looping) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
+func (l *looping) Chat(context.Context, llm.Request, func(llm.Event)) (*llm.Response, error) {
+	l.calls++
+	return &llm.Response{
+		ToolCalls:  []llm.ToolCall{{ID: fmt.Sprint("c", l.calls), Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}},
+		StopReason: "tool_calls", Usage: llm.Usage{InputTokens: 900, OutputTokens: 100},
+	}, nil
+}
+
+func TestRunStopsAtTokenBudget(t *testing.T) {
+	calc, _ := tools.Builtin("calculator")
+	p := &looping{}
+	r := &Run{Provider: p, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: 50, TokenBudget: 3500,
+		Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("go")}}}}
+	out, err := r.Execute(context.Background())
+	if !errors.Is(err, ErrTokenBudget) || p.calls != 4 {
+		t.Fatalf("err=%v calls=%d", err, p.calls)
+	}
+	// It stops between steps: the last call's result is in place.
+	if last := out[len(out)-1]; last.Role != llm.RoleTool {
+		t.Fatalf("ended on %s", last.Role)
+	}
+}
+
+func TestCompactToolResults(t *testing.T) {
+	big := strings.Repeat("x", 5000)
+	var msgs []llm.Message
+	for i := 0; i < 10; i++ {
+		msgs = append(msgs, llm.Message{Role: llm.RoleTool, Parts: []llm.Part{llm.TextPart(big)}})
+	}
+	out := CompactToolResults(msgs, 6)
+	for i, m := range out {
+		trimmed := strings.Contains(m.Text(), "trimmed")
+		if trimmed != (i < 4) {
+			t.Fatalf("message %d trimmed=%v", i, trimmed)
+		}
+	}
+	if msgs[0].Text() != big {
+		t.Fatal("input modified")
 	}
 }

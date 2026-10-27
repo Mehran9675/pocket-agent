@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -159,7 +160,7 @@ func (a *App) startTurn(c *store.Conversation) {
 		}
 		run := &agent.Run{
 			Provider: prov, Model: ref.Model, System: system, Messages: history,
-			Tools: set, Env: env, MaxSteps: maxSteps,
+			Tools: set, Env: env, MaxSteps: maxSteps, TokenBudget: ag.Budget(),
 			Reasoning: a.settings.ShowReasoning && info.Reasoning,
 			Thinking:  thinking,
 			Observer:  obs,
@@ -200,7 +201,11 @@ func (a *App) finishTurn(c *store.Conversation, msg *store.Message, rs *runState
 	case errors.Is(err, context.Canceled):
 		msg.Stopped = true
 	case errors.Is(err, agent.ErrMaxSteps):
-		msg.Error = "The agent reached its step limit. Send “continue” to let it keep going."
+		msg.Error = "The agent paused after reaching its step limit."
+		msg.Paused = true
+	case errors.Is(err, agent.ErrTokenBudget):
+		msg.Error = fmt.Sprintf("The agent paused after using %s tokens, its budget for one task.", compactNum(msg.Usage.InputTokens+msg.Usage.OutputTokens))
+		msg.Paused = true
 	default:
 		msg.Error = agent.FriendlyError(err)
 	}

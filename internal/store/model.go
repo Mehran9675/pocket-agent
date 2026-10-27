@@ -213,11 +213,14 @@ type Message struct {
 	Text        string       `json:"text,omitempty"`
 	Attachments []Attachment `json:"attachments,omitempty"`
 	// Blocks make up an assistant turn.
-	Blocks   []Block          `json:"blocks,omitempty"`
-	Model    string           `json:"model,omitempty"`
-	Usage    llm.Usage        `json:"usage,omitempty"`
-	Error    string           `json:"error,omitempty"`
-	Stopped  bool             `json:"stopped,omitempty"`
+	Blocks  []Block   `json:"blocks,omitempty"`
+	Model   string    `json:"model,omitempty"`
+	Usage   llm.Usage `json:"usage,omitempty"`
+	Error   string    `json:"error,omitempty"`
+	Stopped bool      `json:"stopped,omitempty"`
+	// Paused is set when an agent stopped at a limit (steps or tokens)
+	// and can pick up where it left off.
+	Paused   bool             `json:"paused,omitempty"`
 	Plan     []tools.PlanItem `json:"plan,omitempty"`
 	Research *Research        `json:"research,omitempty"`
 	Duration time.Duration    `json:"duration,omitempty"`
@@ -296,6 +299,9 @@ type Agent struct {
 	// Model overrides the conversation's model when set.
 	Model    ModelRef `json:"model,omitempty"`
 	MaxSteps int      `json:"maxSteps"`
+	// TokenBudget caps the tokens one task may use, in thousands; 0
+	// uses DefaultTokenBudget.
+	TokenBudget int `json:"tokenBudget,omitempty"`
 	// AutoApprove runs tools that normally ask first without asking.
 	AutoApprove bool     `json:"autoApprove,omitempty"`
 	Starters    []string `json:"starters,omitempty"`
@@ -411,4 +417,16 @@ func (s *Settings) dropPresetAddresses() {
 			p.BaseURL = ""
 		}
 	}
+}
+
+// DefaultTokenBudget is the tokens, in thousands, a task may use before
+// pausing.
+const DefaultTokenBudget = 500
+
+// Budget is the agent's token budget in tokens.
+func (a *Agent) Budget() int {
+	if a == nil || a.TokenBudget <= 0 {
+		return DefaultTokenBudget * 1000
+	}
+	return a.TokenBudget * 1000
 }

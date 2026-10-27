@@ -41,12 +41,7 @@ func (a *App) input(key, placeholder, init string, opts ...func(*input.Input)) *
 func (a *App) dropInput(key string) { delete(a.inputs, key) }
 
 // scrollBar styles scroll bars: thin on desktops, hidden on phones and
-// tablets, where swiping needs no bar. Giode has no switch to hide one
-// and draws its defaults for a fully transparent color, so a nearly
-// transparent one stands in.
+// tablets, where swiping needs no bar.
 func scrollBar() giode.ScrollBar {
-	if isMobile() {
-		return giode.ScrollBar{Width: 4, ThumbColor: "#00000001", TrackColor: "#00000001"}
-	}
-	return giode.ScrollBar{Width: 4, ThumbColor: "theme.border", Radius: 2}
+	return giode.ScrollBar{Width: 4, ThumbColor: "theme.border", Radius: 2, Hidden: isMobile()}
 }

@@ -36,6 +36,9 @@ func (a *App) saveAgent(ag *store.Agent) {
 	if n, err := strconv.Atoi(strings.TrimSpace(a.input(k+"steps", "", strconv.Itoa(ag.MaxSteps)).Text())); err == nil && n > 0 && n <= 100 {
 		ag.MaxSteps = n
 	}
+	if n, err := strconv.Atoi(strings.TrimSpace(a.input(k+"budget", "", strconv.Itoa(ag.Budget()/1000)).Text())); err == nil && n > 0 {
+		ag.TokenBudget = n
+	}
 	var starters []string
 	for _, l := range strings.Split(a.input(k+"starters", "", strings.Join(ag.Starters, "\n")).Text(), "\n") {
 		if l = strings.TrimSpace(l); l != "" {
@@ -53,6 +56,7 @@ func (a *App) agentEditorBody(ag *store.Agent) widgets.El {
 	desc := a.input(k+"desc", "What it's for", ag.Description)
 	instr := a.input(k+"instr", "Instructions", ag.Instructions, func(i *input.Input) { i.Multiline(true) })
 	steps := a.input(k+"steps", "20", strconv.Itoa(ag.MaxSteps), func(i *input.Input) { i.Keyboard(giode.KeyboardNumeric) })
+	budget := a.input(k+"budget", strconv.Itoa(store.DefaultTokenBudget), strconv.Itoa(ag.Budget()/1000), func(i *input.Input) { i.Keyboard(giode.KeyboardNumeric) })
 	starters := a.input(k+"starters", "One suggestion per line", strings.Join(ag.Starters, "\n"), func(i *input.Input) { i.Multiline(true) })
 
 	label := func(s string) widgets.El {
@@ -115,6 +119,7 @@ func (a *App) agentEditorBody(ag *store.Agent) widgets.El {
 		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Instructions"), widgets.Text("The agent's system prompt: its role, method and what a finished job looks like.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: -1, MinHeight: 160}, instr)),
 		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Conversation starters"), giode.Box(widgets.St{Width: -1, MinHeight: 90}, starters)),
 		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Maximum steps"), widgets.Text("How many model calls the agent may make for one task.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, steps)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Token budget (thousands)"), widgets.Text("The agent pauses once a task has used this many tokens; Continue resumes it.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, budget)),
 		widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel("Tools"), widgets.Group(toolRows...)),
 		widgets.Group(widgets.ListRow(k+"auto", "shield-check", theme.T.Warning, "Run without asking", "Skip approval for actions like deleting files and MCP writes", widgets.Toggle(k+"autot", ag.AutoApprove, func(v bool) {
 			ag.AutoApprove = v

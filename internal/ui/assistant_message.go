@@ -68,13 +68,21 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 	}
 	if m.Error != "" {
 		add("error", state, func() widgets.El {
+			// A paused agent isn't a failure: it reads as a notice.
+			icon, color, bg := "triangle-alert", theme.T.Danger, theme.T.DangerSoft
+			if m.Paused {
+				icon, color, bg = "info", theme.T.Primary, theme.T.PrimarySoft
+			}
 			return widgets.Row(widgets.St{
 				Gap: 10, Padding: giode.UniformInset(12), BorderRadius: 12, Width: -1, Align: giode.AlignStart,
-				Background: theme.T.DangerSoft, BorderWidth: 1, BorderColor: theme.Tint(theme.T.Danger, 0.3),
+				Background: bg, BorderWidth: 1, BorderColor: theme.Tint(color, 0.3),
 			},
-				widgets.Icon("triangle-alert", 18, theme.T.Danger),
+				widgets.Icon(icon, 18, color),
 				giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(m.Error, theme.SizeCallout, theme.T.Text)),
-				widgets.When(last && !running, func() widgets.El {
+				widgets.When(last && !running && m.Paused, func() widgets.El {
+					return widgets.Button("continue/"+m.ID, "Continue", "play", widgets.BtnPrimary, func() { a.send("Continue where you left off.", nil) })
+				}),
+				widgets.When(last && !running && !m.Paused, func() widgets.El {
 					return widgets.Button("retry/"+m.ID, "Retry", "rotate-ccw", widgets.BtnSecondary, func() { a.regenerate(c) })
 				}),
 			)

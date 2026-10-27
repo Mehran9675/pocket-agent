@@ -31,16 +31,19 @@ type Observer interface {
 
 // Run is one agentic turn.
 type Run struct {
-	Provider  llm.Provider
-	Model     string
-	System    string
-	Messages  []llm.Message
-	Tools     *tools.Set
-	Env       *tools.Env
-	MaxSteps  int
-	Reasoning bool
+	Provider llm.Provider
+	Model    string
+	System   string
+	Messages []llm.Message
+	Tools    *tools.Set
+	Env      *tools.Env
+	MaxSteps int
+	// TokenBudget stops the run, between steps, once its model calls
+	// have used this many tokens; 0 is no limit.
+	TokenBudget int
+	Reasoning   bool
 	// Thinking sets how much reasoning models think.
-	Thinking llm.Thinking
+	Thinking  llm.Thinking
 	MaxTokens int
 	// Approve decides whether a tool needing approval may run; it may
 	// block (waiting for the user). Nil approves everything.
@@ -52,6 +55,9 @@ type Run struct {
 
 // ErrMaxSteps is returned when the run used up its steps.
 var ErrMaxSteps = errors.New("stopped after reaching the step limit")
+
+// ErrTokenBudget is returned when the run used up its token budget.
+var ErrTokenBudget = errors.New("stopped after using its token budget")
 
 // ErrRefused is returned when the model declined the request.
 var ErrRefused = errors.New("the model declined to answer this request")
@@ -70,12 +76,18 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 	if r.Tools != nil {
 		specs = r.Tools.Specs()
 	}
+	used := 0
 	for step := 0; step < maxSteps; step++ {
+		// Checked between steps, when every tool call has its result,
+		// so the conversation can be continued later.
+		if r.TokenBudget > 0 && used >= r.TokenBudget {
+			return msgs[start:], ErrTokenBudget
+		}
 		r.Observer.StepStart(step)
 		req := llm.Request{
 			Model:     r.Model,
 			System:    r.System,
-			Messages:  msgs,
+			Messages:  CompactToolResults(msgs, keepToolResults),
 			Tools:     specs,
 			Reasoning: r.Reasoning,
 			Thinking:  r.Thinking,
@@ -93,6 +105,7 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			return msgs[start:], err
 		}
 		r.Observer.Usage(resp.Usage)
+		used += resp.Usage.InputTokens + resp.Usage.OutputTokens
 		assistant := llm.Message{Role: llm.RoleAssistant, ToolCalls: resp.ToolCalls, Native: resp.Native}
 		if resp.Text != "" {
 			assistant.Parts = []llm.Part{llm.TextPart(resp.Text)}
@@ -208,4 +221,44 @@ func chat(ctx context.Context, p llm.Provider, req llm.Request, onEvent func(llm
 		resp.Usage.GenMillis = time.Since(first).Milliseconds()
 	}
 	return resp, err
+}
+
+// keepToolResults is how many of the latest tool results are sent in
+// full; older ones are trimmed.
+const keepToolResults = 6
+
+// trimmedResult is how much of an older tool result is kept.
+const trimmedResult = 1500
+
+// CompactToolResults returns msgs with all but the last keep tool
+// results cut to an excerpt. Every step resends the whole conversation,
+// so without this a long run's input grows with each page it reads and
+// its total use grows quadratically. The model can run a tool again for
+// anything it needs in full.
+func CompactToolResults(msgs []llm.Message, keep int) []llm.Message {
+	seen := 0
+	var out []llm.Message
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role != llm.RoleTool {
+			continue
+		}
+		seen++
+		if seen <= keep {
+			continue
+		}
+		text := msgs[i].Text()
+		if len([]rune(text)) <= trimmedResult {
+			continue
+		}
+		if out == nil {
+			out = append([]llm.Message(nil), msgs...)
+		}
+		m := out[i]
+		m.Parts = []llm.Part{llm.TextPart(string([]rune(text)[:trimmedResult]) + fmt.Sprintf("\n\n[%d more characters trimmed from this earlier result to save context; run the tool again if you need them]", len([]rune(text))-trimmedResult))}
+		out[i] = m
+	}
+	if out == nil {
+		return msgs
+	}
+	return out
 }
