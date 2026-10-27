@@ -39,6 +39,8 @@ type Run struct {
 	Env       *tools.Env
 	MaxSteps  int
 	Reasoning bool
+	// Thinking sets how much reasoning models think.
+	Thinking llm.Thinking
 	MaxTokens int
 	// Approve decides whether a tool needing approval may run; it may
 	// block (waiting for the user). Nil approves everything.
@@ -76,9 +78,10 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			Messages:  msgs,
 			Tools:     specs,
 			Reasoning: r.Reasoning,
+			Thinking:  r.Thinking,
 			MaxTokens: r.MaxTokens,
 		}
-		resp, err := r.Provider.Chat(ctx, req, func(ev llm.Event) {
+		resp, err := chat(ctx, r.Provider, req, func(ev llm.Event) {
 			switch ev.Kind {
 			case llm.EventText:
 				r.Observer.Text(ev.Text)
@@ -159,7 +162,7 @@ func (r *Run) runTool(ctx context.Context, call llm.ToolCall) (tools.Result, boo
 // Complete runs a single tool-less prompt and returns the text - for
 // titles, research planning and summaries.
 func Complete(ctx context.Context, p llm.Provider, model, system, prompt string, maxTokens int) (string, error) {
-	resp, err := p.Chat(ctx, llm.Request{
+	resp, err := chat(ctx, p, llm.Request{
 		Model:     model,
 		System:    system,
 		Messages:  []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart(prompt)}}},
@@ -188,4 +191,21 @@ func FriendlyError(err error) string {
 		return "The request timed out."
 	}
 	return fmt.Sprint(err)
+}
+
+// chat runs a model call, timing its output for Usage.GenMillis.
+func chat(ctx context.Context, p llm.Provider, req llm.Request, onEvent func(llm.Event)) (*llm.Response, error) {
+	var first time.Time
+	resp, err := p.Chat(ctx, req, func(ev llm.Event) {
+		if first.IsZero() {
+			first = time.Now()
+		}
+		if onEvent != nil {
+			onEvent(ev)
+		}
+	})
+	if resp != nil && !first.IsZero() {
+		resp.Usage.GenMillis = time.Since(first).Milliseconds()
+	}
+	return resp, err
 }

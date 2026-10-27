@@ -78,7 +78,9 @@ type Conversation struct {
 	// WebSearch offers web tools in chat mode.
 	WebSearch bool          `json:"webSearch,omitempty"`
 	Depth     ResearchDepth `json:"depth,omitempty"`
-	Messages  []*Message    `json:"messages"`
+	// Thinking sets how much reasoning models think in this chat.
+	Thinking llm.Thinking `json:"thinking,omitempty"`
+	Messages []*Message   `json:"messages"`
 	// Version increments on every change, for render caches.
 	Version int `json:"-"`
 }
@@ -326,12 +328,14 @@ type Settings struct {
 	// ChatTools are the tools offered in plain chat.
 	ChatTools []string `json:"chatTools"`
 	// AutoApprove lists tools allowed to run without asking.
-	AutoApprove   map[string]bool   `json:"autoApprove"`
-	MemoryEnabled bool              `json:"memoryEnabled"`
-	Instructions  string            `json:"instructions"`
-	ShowReasoning bool              `json:"showReasoning"`
-	Local         LocalSettings     `json:"local"`
-	MCPServers    []tools.MCPServer `json:"mcpServers"`
+	AutoApprove   map[string]bool `json:"autoApprove"`
+	MemoryEnabled bool            `json:"memoryEnabled"`
+	Instructions  string          `json:"instructions"`
+	ShowReasoning bool            `json:"showReasoning"`
+	// Thinking is the level new chats start with: the last one chosen.
+	Thinking   llm.Thinking      `json:"thinking,omitempty"`
+	Local      LocalSettings     `json:"local"`
+	MCPServers []tools.MCPServer `json:"mcpServers"`
 	// Onboarded is set once the welcome flow finished.
 	Onboarded bool    `json:"onboarded"`
 	FontScale float64 `json:"fontScale,omitempty"`

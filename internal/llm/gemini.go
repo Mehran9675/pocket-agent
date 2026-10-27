@@ -163,8 +163,8 @@ func (p *Gemini) Chat(ctx context.Context, req Request, onEvent func(Event)) (*R
 	if req.MaxTokens > 0 {
 		gen["maxOutputTokens"] = req.MaxTokens
 	}
-	if req.Reasoning {
-		gen["thinkingConfig"] = map[string]any{"includeThoughts": true}
+	if tc := geminiThinking(req); len(tc) > 0 {
+		gen["thinkingConfig"] = tc
 	}
 	if len(gen) > 0 {
 		body["generationConfig"] = gen
@@ -303,4 +303,36 @@ func (p *Gemini) Models(ctx context.Context) ([]ModelInfo, error) {
 		})
 	}
 	return models, nil
+}
+
+// geminiThinking builds thinkingConfig: Gemini 3 takes a level, 2.5 a
+// token budget (Pro can't go below 128).
+func geminiThinking(req Request) map[string]any {
+	tc := map[string]any{}
+	if req.Reasoning && req.Thinking != ThinkingOff {
+		tc["includeThoughts"] = true
+	}
+	switch {
+	case req.Thinking == ThinkingAuto:
+	case strings.Contains(req.Model, "gemini-3"):
+		// Flash takes minimal to high; Pro only low and high.
+		level := string(req.Thinking)
+		flash := strings.Contains(req.Model, "flash")
+		switch {
+		case req.Thinking == ThinkingOff && flash:
+			level = "minimal"
+		case req.Thinking == ThinkingOff:
+			level = "low"
+		case req.Thinking == ThinkingMedium && !flash:
+			level = "high"
+		}
+		tc["thinkingLevel"] = level
+	default:
+		budget := thinkingBudget(req.Thinking)
+		if req.Thinking == ThinkingOff && strings.Contains(req.Model, "pro") {
+			budget = 128
+		}
+		tc["thinkingBudget"] = budget
+	}
+	return tc
 }

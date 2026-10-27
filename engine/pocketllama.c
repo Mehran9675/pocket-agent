@@ -59,11 +59,11 @@ pa_model *pa_load(const char *path, int32_t n_ctx, int32_t n_threads, int32_t n_
 	}
 
 	int32_t train = llama_model_n_ctx_train(model);
-	if (n_ctx <= 0) {
+	if (n_ctx == 0) {
 		n_ctx = 4096;
 	}
-	if (train > 0 && n_ctx > train) {
-		n_ctx = train;
+	if (n_ctx < 0 || (train > 0 && n_ctx > train)) {
+		n_ctx = train > 0 ? train : 4096;
 	}
 	struct llama_context_params cp = llama_context_default_params();
 	cp.n_ctx = (uint32_t)n_ctx;

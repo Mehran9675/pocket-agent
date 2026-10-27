@@ -25,6 +25,8 @@ type OpenAI struct {
 	// NoStreamUsage leaves out stream_options for servers that reject
 	// it.
 	NoStreamUsage bool
+	// Thinking is how the server takes thinking levels.
+	Thinking ThinkingStyle
 }
 
 func (p *OpenAI) headers() map[string]string {
@@ -163,9 +165,7 @@ func (p *OpenAI) Chat(ctx context.Context, req Request, onEvent func(Event)) (*R
 			body["max_tokens"] = req.MaxTokens
 		}
 	}
-	if req.Reasoning && p.Official {
-		body["reasoning_effort"] = "medium"
-	}
+	p.Thinking.apply(body, req.Thinking)
 	resp, err := postJSON(ctx, p.Name, p.base()+"/chat/completions", p.headers(), body)
 	if err != nil {
 		return nil, err
@@ -279,6 +279,8 @@ func (p *OpenAI) Models(ctx context.Context) ([]ModelInfo, error) {
 			ID            string `json:"id"`
 			Name          string `json:"name"`
 			ContextLength int    `json:"context_length"`
+			// SupportedParameters is OpenRouter's capability list.
+			SupportedParameters []string `json:"supported_parameters"`
 		} `json:"data"`
 	}
 	if err := getJSON(ctx, p.Name, p.base()+"/models", p.headers(), &out); err != nil {
@@ -290,7 +292,11 @@ func (p *OpenAI) Models(ctx context.Context) ([]ModelInfo, error) {
 		if name == "" {
 			name = m.ID
 		}
-		models = append(models, ModelInfo{ID: m.ID, Name: name, ContextWindow: m.ContextLength, Tools: true})
+		reasoning := LooksLikeReasoning(m.ID)
+		for _, sp := range m.SupportedParameters {
+			reasoning = reasoning || sp == "reasoning" || sp == "include_reasoning"
+		}
+		models = append(models, ModelInfo{ID: m.ID, Name: name, ContextWindow: m.ContextLength, Tools: true, Reasoning: reasoning})
 	}
 	sort.Slice(models, func(i, j int) bool { return models[i].ID < models[j].ID })
 	return models, nil

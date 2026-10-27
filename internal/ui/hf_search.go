@@ -13,7 +13,7 @@ import (
 )
 
 func (a *App) hfSearch() widgets.El {
-	in := a.input("hf/q", "Search Hugging Face GGUF models", "")
+	in := a.input("hf/q", "Search Hugging Face", "")
 	in.Submit(func(q string) { a.runHFSearch(q) })
 	var kids []widgets.El
 	kids = append(kids, widgets.Row(widgets.St{Gap: 8, Width: -1},

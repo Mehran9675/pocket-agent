@@ -59,7 +59,7 @@ func (p *Provider) Chat(ctx context.Context, req llm.Request, onEvent func(llm.E
 	}
 
 	msgs := templateMessages(req)
-	prompt, err := p.Engine.ApplyTemplate(msgs, true)
+	prompt, err := p.prompt(msgs, req.Thinking)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (p *Provider) Chat(ctx context.Context, req llm.Request, onEvent func(llm.E
 	budget := p.Engine.ContextSize() - min(gen.MaxTokens, p.Engine.ContextSize()/3)
 	for len(msgs) > 2 && p.Engine.CountTokens(prompt) > budget {
 		msgs = append(msgs[:1], msgs[2:]...)
-		if prompt, err = p.Engine.ApplyTemplate(msgs, true); err != nil {
+		if prompt, err = p.prompt(msgs, req.Thinking); err != nil {
 			return nil, err
 		}
 	}
@@ -86,6 +86,30 @@ func (p *Provider) Chat(ctx context.Context, req llm.Request, onEvent func(llm.E
 		return resp, err
 	}
 	return resp, nil
+}
+
+// prompt formats msgs. With thinking off it uses the convention of
+// hybrid models (Qwen3, SmolLM3, ...): /no_think on the last user turn
+// and an empty thinking block to start the reply.
+func (p *Provider) prompt(msgs []TemplateMessage, thinking llm.Thinking) (string, error) {
+	if thinking != llm.ThinkingOff {
+		return p.Engine.ApplyTemplate(msgs, true)
+	}
+	msgs = append([]TemplateMessage(nil), msgs...)
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == "user" {
+			msgs[i].Content += " /no_think"
+			break
+		}
+	}
+	prompt, err := p.Engine.ApplyTemplate(msgs, true)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(strings.TrimSpace(prompt), "</think>") {
+		prompt += "<think>\n\n</think>\n\n"
+	}
+	return prompt, nil
 }
 
 // Models implements llm.Provider: the downloaded models.

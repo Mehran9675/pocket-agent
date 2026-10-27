@@ -202,6 +202,9 @@ func (c *composer) view(compact bool) widgets.El {
 		labels := map[store.ResearchDepth]string{store.DepthQuick: "Quick", store.DepthStandard: "Standard", store.DepthDeep: "Deep"}
 		tools = append(tools, widgets.Chip("composer/depth", labels[depth], "gauge", false, a.openDepthSheet))
 	}
+	if a.modelThinks(a.currentModel()) {
+		tools = append(tools, a.thinkingChip(compact))
+	}
 	canSend := !c.busy() && (c.in.Text() != "" || len(c.pending) > 0)
 	if dictationSupported() && !running {
 		tools = append(tools, c.micButton())

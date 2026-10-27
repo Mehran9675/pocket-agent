@@ -25,6 +25,13 @@ func (a *App) messageFooter(c *store.Conversation, m *store.Message, last bool) 
 	if m.Usage.OutputTokens > 0 {
 		meta = append(meta, fmt.Sprintf("%s tokens", compactNum(m.Usage.InputTokens+m.Usage.OutputTokens)))
 	}
+	if tps := m.Usage.TokensPerSecond(); tps > 0 {
+		if tps < 10 {
+			meta = append(meta, fmt.Sprintf("%.1f tok/s", tps))
+		} else {
+			meta = append(meta, fmt.Sprintf("%.0f tok/s", tps))
+		}
+	}
 	if m.Duration > 0 {
 		meta = append(meta, fmtDuration(m.Duration))
 	}

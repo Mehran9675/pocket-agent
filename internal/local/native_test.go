@@ -31,10 +31,19 @@ func TestNativeEngine(t *testing.T) {
 	if !e.Available() {
 		t.Fatal(e.Problem())
 	}
+	// -1 loads the model's full trained context.
+	if err := e.Load(model, LoadOptions{ContextSize: -1}); err != nil {
+		t.Fatal(err)
+	}
+	full := e.ContextSize()
+	e.Unload()
 	if err := e.Load(model, LoadOptions{ContextSize: 256}); err != nil {
 		t.Fatal(err)
 	}
 	defer e.Unload()
+	if full <= 256 {
+		t.Fatalf("full context %d", full)
+	}
 	if e.ContextSize() != 256 || rt.Status().Loaded == "" {
 		t.Fatalf("context %d, loaded %q", e.ContextSize(), rt.Status().Loaded)
 	}

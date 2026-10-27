@@ -113,5 +113,8 @@ func engineSummary(a *App) string {
 	if !a.engine.Available() {
 		return a.engineLabel()
 	}
-	return fmt.Sprintf("%s · %d-token context", a.engineLabel(), a.settings.Local.ContextSize)
+	if a.settings.Local.ContextSize < 0 {
+		return a.engineLabel() + " · model's full context"
+	}
+	return fmt.Sprintf("%s · %dK context", a.engineLabel(), a.settings.Local.ContextSize/1024)
 }

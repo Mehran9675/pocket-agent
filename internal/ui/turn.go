@@ -35,6 +35,7 @@ func (a *App) send(text string, atts []store.Attachment) {
 			AgentID:   a.draft.agentID,
 			WebSearch: a.draft.web,
 			Depth:     a.draft.depth,
+			Thinking:  a.settings.Thinking,
 		}
 		c.Title = titleFromText(text)
 		a.convs = append([]*store.Conversation{c}, a.convs...)
@@ -78,6 +79,10 @@ func (a *App) startTurn(c *store.Conversation) {
 
 	history := agent.BuildHistory(a.st, c.Messages[:len(c.Messages)-1], info.Vision)
 	obs := &observer{a: a, c: c, m: msg, rs: rs}
+	thinking := c.Thinking
+	if !a.modelThinks(ref) {
+		thinking = llm.ThinkingAuto
+	}
 	started := time.Now()
 	firstTurn := len(c.Messages) <= 2
 
@@ -103,7 +108,7 @@ func (a *App) startTurn(c *store.Conversation) {
 		r := &agent.Research{
 			Provider: prov, Model: ref.Model, Question: question, Context: prior.String(),
 			Depth: c.Depth, Search: a.settings.Search, Observer: obs,
-			Small: ref.Provider == store.LocalProviderID,
+			Small: ref.Provider == store.LocalProviderID, Thinking: thinking,
 		}
 		go func() {
 			err := r.Run(ctx)
@@ -156,6 +161,7 @@ func (a *App) startTurn(c *store.Conversation) {
 			Provider: prov, Model: ref.Model, System: system, Messages: history,
 			Tools: set, Env: env, MaxSteps: maxSteps,
 			Reasoning: a.settings.ShowReasoning && info.Reasoning,
+			Thinking:  thinking,
 			Observer:  obs,
 			NeedsApproval: func(t *tools.Tool) bool {
 				if !t.Approval || a.settings.AutoApprove[t.Name] {

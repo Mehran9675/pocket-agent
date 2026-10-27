@@ -97,9 +97,11 @@ type Request struct {
 	Temperature *float64
 	// MaxTokens caps the reply; 0 uses a sensible default.
 	MaxTokens int
-	// Reasoning asks reasoning-capable models to think first, where
+	// Reasoning asks reasoning models to show their thinking, where
 	// the API exposes a switch for it.
 	Reasoning bool
+	// Thinking sets how much reasoning models think.
+	Thinking Thinking
 }
 
 // EventKind classifies streaming events.
@@ -125,11 +127,22 @@ type Event struct {
 type Usage struct {
 	InputTokens  int
 	OutputTokens int
+	// GenMillis is the time spent streaming the output, from the first
+	// token on.
+	GenMillis int64 `json:",omitempty"`
 }
 
 // Add sums two usages.
 func (u Usage) Add(o Usage) Usage {
-	return Usage{InputTokens: u.InputTokens + o.InputTokens, OutputTokens: u.OutputTokens + o.OutputTokens}
+	return Usage{InputTokens: u.InputTokens + o.InputTokens, OutputTokens: u.OutputTokens + o.OutputTokens, GenMillis: u.GenMillis + o.GenMillis}
+}
+
+// TokensPerSecond is the output speed, 0 when unknown.
+func (u Usage) TokensPerSecond() float64 {
+	if u.GenMillis < 200 || u.OutputTokens == 0 {
+		return 0
+	}
+	return float64(u.OutputTokens) / (float64(u.GenMillis) / 1000)
 }
 
 // Response is a finished model call.

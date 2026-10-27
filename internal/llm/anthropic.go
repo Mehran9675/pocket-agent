@@ -146,9 +146,19 @@ func (p *Anthropic) Chat(ctx context.Context, req Request, onEvent func(Event)) 
 		}
 		params.Tools = append(params.Tools, anthropic.ToolUnionParam{OfTool: &tool})
 	}
-	if req.Reasoning && adaptiveThinking(req.Model) {
-		adaptive := anthropic.ThinkingConfigAdaptiveParam{Display: anthropic.ThinkingConfigAdaptiveDisplaySummarized}
-		params.Thinking = anthropic.ThinkingConfigParamUnion{OfAdaptive: &adaptive}
+	if adaptiveThinking(req.Model) {
+		if req.Thinking == ThinkingOff {
+			params.Thinking = anthropic.ThinkingConfigParamUnion{OfDisabled: &anthropic.ThinkingConfigDisabledParam{}}
+		} else {
+			display := anthropic.ThinkingConfigAdaptiveDisplayOmitted
+			if req.Reasoning {
+				display = anthropic.ThinkingConfigAdaptiveDisplaySummarized
+			}
+			params.Thinking = anthropic.ThinkingConfigParamUnion{OfAdaptive: &anthropic.ThinkingConfigAdaptiveParam{Display: display}}
+			if req.Thinking != ThinkingAuto {
+				params.OutputConfig = anthropic.OutputConfigParam{Effort: anthropic.OutputConfigEffort(req.Thinking)}
+			}
+		}
 	}
 	var opts []option.RequestOption
 	if refusalFallback(req.Model) {

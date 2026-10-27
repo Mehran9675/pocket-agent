@@ -65,7 +65,8 @@ PA_API int32_t pa_abi_version(void);
 /* pa_engine_version identifies the build: the llama.cpp commit and this file's revision. */
 PA_API const char *pa_engine_version(void);
 
-/* pa_load loads a GGUF model. n_ctx <= 0 picks a default; abort is
+/* pa_load loads a GGUF model. n_ctx 0 picks a default and a negative
+ * n_ctx the context the model was trained for; abort is
  * polled during decoding and cancels it when non-zero. Returns NULL and
  * writes a message to err on failure. */
 PA_API pa_model *pa_load(const char *path, int32_t n_ctx, int32_t n_threads, int32_t n_gpu_layers,

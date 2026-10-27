@@ -16,7 +16,8 @@ var ErrUnavailable = errors.New("the on-device engine isn't installed - download
 
 // LoadOptions configure a model load.
 type LoadOptions struct {
-	// ContextSize in tokens; 0 picks a default from device memory.
+	// ContextSize in tokens; 0 picks a default, -1 the model's trained
+	// maximum.
 	ContextSize int
 	// Threads for generation; 0 uses the performance cores.
 	Threads int

@@ -14,7 +14,7 @@ func (a *App) resolve(ref store.ModelRef) (llm.Provider, llm.ModelInfo, error) {
 		return nil, info, errors.New("choose a model first")
 	}
 	if ref.Provider == store.LocalProviderID {
-		info.ContextWindow = a.settings.Local.ContextSize
+		info.ContextWindow = max(a.settings.Local.ContextSize, 0)
 		for _, m := range a.models.Installed() {
 			if m.File == ref.Model {
 				info.Name, info.Reasoning = m.Name, m.Reasoning

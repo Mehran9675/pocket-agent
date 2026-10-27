@@ -47,7 +47,7 @@ func (a *App) mcpBody() widgets.El {
 	}
 	nameIn := a.input("mcp/name", "Name, e.g. GitHub", "")
 	urlIn := a.input("mcp/url", "https://example.com/mcp", "", func(i *input.Input) { i.Keyboard(giode.KeyboardURL) })
-	authIn := a.input("mcp/auth", "Authorization header (optional), e.g. Bearer …", "", func(i *input.Input) { i.Password(true) })
+	authIn := a.input("mcp/auth", "Auth header (optional)", "", func(i *input.Input) { i.Password(true) })
 	add := func() {
 		u := strings.TrimSpace(urlIn.Text())
 		if !strings.HasPrefix(u, "http") {

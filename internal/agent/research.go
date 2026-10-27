@@ -36,6 +36,8 @@ type Research struct {
 	Depth    store.ResearchDepth
 	Search   tools.SearchConfig
 	Small    bool // small context window: read less, write tighter
+	// Thinking sets how much a reasoning model thinks on each call.
+	Thinking llm.Thinking
 	Observer ResearchObserver
 
 	mu     sync.Mutex
@@ -80,11 +82,12 @@ func (r *Research) update(fn func(*store.Research)) {
 }
 
 func (r *Research) complete(ctx context.Context, system, prompt string, maxTokens int) (string, error) {
-	resp, err := r.Provider.Chat(ctx, llm.Request{
+	resp, err := chat(ctx, r.Provider, llm.Request{
 		Model:     r.Model,
 		System:    system,
 		Messages:  []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart(prompt)}}},
 		MaxTokens: maxTokens,
+		Thinking:  r.Thinking,
 	}, nil)
 	if err != nil {
 		return "", err
@@ -375,11 +378,12 @@ Write %s in Markdown that answers the request:
 - Note disagreements between sources and how recent the information is.
 - End with "## Key takeaways" (3-5 bullets). Do not add a sources list; the app shows it.
 Use only the notes; say so where the evidence is thin.`, r.Question, goal, srcs.String(), r.notesText(0), length)
-	resp, err := r.Provider.Chat(ctx, llm.Request{
+	resp, err := chat(ctx, r.Provider, llm.Request{
 		Model:     r.Model,
 		System:    "You are an expert research analyst writing for a smart, busy reader. Today is " + time.Now().Format("2 January 2006") + ".",
 		Messages:  []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart(prompt)}}},
 		MaxTokens: maxTokens,
+		Thinking:  r.Thinking,
 	}, func(ev llm.Event) {
 		if ev.Kind == llm.EventText {
 			r.Observer.Text(ev.Text)

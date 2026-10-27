@@ -25,11 +25,17 @@ dozens of sources and writes a cited report. Written in Go with
   every launch and installs automatically; on iOS it's built into the app. A curated catalog of GGUF
   models sized for phones (Qwen3, Llama 3.2, Gemma 3, Phi-4 mini, SmolLM2) with a fit rating
   for the device's RAM, resumable downloads, Hugging Face search, GGUF import, prompt-cache
-  reuse between turns, and context / creativity / length / GPU settings.
+  reuse between turns, context windows from 2K up to the model's full trained length, and
+  creativity / length / GPU settings.
 - **Cloud providers** with your own keys: Anthropic (official Go SDK, adaptive thinking,
-  server-side refusal fallback), OpenAI, Google Gemini, OpenRouter, Groq, Mistral, DeepSeek,
-  xAI, Together, and any OpenAI-compatible endpoint (vLLM, LiteLLM, llama.cpp server).
-- **Your own computer**: Ollama and LM Studio over the local network.
+  server-side refusal fallback), OpenAI, Google Gemini, xAI, Mistral, DeepSeek, Moonshot (Kimi),
+  Z.ai (GLM), Alibaba Cloud (Qwen), MiniMax, Perplexity, Cohere; inference platforms OpenRouter,
+  DeepInfra, Together, Groq, Fireworks, Cerebras, SambaNova, Hugging Face, NVIDIA NIM, Novita,
+  Hyperbolic and Vercel AI Gateway; and any OpenAI-compatible endpoint.
+- **Thinking control** per chat for reasoning models: Auto, Off, Low, Medium or High, mapped to
+  each provider's own switch (Anthropic effort, OpenAI and compatible `reasoning_effort`,
+  OpenRouter's reasoning object, Gemini thinking levels and budgets, Qwen3 `/no_think` on device).
+- **Your own computer**: Ollama, LM Studio, llama.cpp server and vLLM over the local network.
 - Model lists fetched from each provider, favorites, per-conversation model switching.
 
 **Chat**
@@ -44,7 +50,7 @@ dozens of sources and writes a cited report. Written in Go with
   *Allow once / Always allow / Deny* approval.
 - **MCP servers** (Streamable HTTP) add remote tools to chats and agents.
 - Regenerate, edit and resend, copy, share, export to Markdown, rename, pin, search, per-chat
-  system prompt, automatic titles, token and time stats.
+  system prompt, automatic titles, token, tokens-per-second and time stats.
 
 **Agents**
 

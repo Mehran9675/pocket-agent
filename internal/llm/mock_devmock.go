@@ -105,7 +105,7 @@ func (mock) Chat(ctx context.Context, req Request, onEvent func(Event)) (*Respon
 		_ = stream(ctx, col, EventReasoning, "The user wants current information, so I should search the web before answering.")
 		call("web_search", map[string]any{"query": last})
 	default:
-		if req.Reasoning {
+		if req.Reasoning && req.Thinking != ThinkingOff {
 			if err := stream(ctx, col, EventReasoning, "Let me structure this: a short overview, a comparison table, then a code sample and practical next steps."); err != nil {
 				return nil, err
 			}
