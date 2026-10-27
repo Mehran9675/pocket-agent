@@ -1,6 +1,13 @@
 package ui
 
-import "strings"
+import (
+	"fmt"
+	"hash/fnv"
+	"strconv"
+	"strings"
+
+	"github.com/mehran9675/pocket-agent/internal/ui/theme"
+)
 
 // chunkSize is the length long text is split at for rendering. Each
 // chunk is its own memo, so touching or streaming into one part of a
@@ -10,7 +17,8 @@ const chunkSize = 2000
 
 // splitMarkdown splits Markdown into chunks of about max bytes at blank
 // lines outside fenced code blocks, so each chunk renders on its own as
-// the whole would. Text with no such break stays one chunk.
+// the whole would. Text with no blank line for 3*max bytes is split at
+// a line break instead (a paragraph that long gains a break).
 func splitMarkdown(s string, max int) []string {
 	if len(s) <= max {
 		return []string{s}
@@ -30,8 +38,9 @@ func splitMarkdown(s string, max int) []string {
 				fence = ""
 			}
 		}
-		// Break before a blank line once the chunk is long enough.
-		if fence == "" && pos-start >= max && t == "" && i+1 < len(lines) {
+		// Break at a blank line once the chunk is long enough, or at any
+		// line in text that has no blank lines for far too long.
+		if fence == "" && i+1 < len(lines) && ((pos-start >= max && t == "") || pos-start >= 3*max) {
 			chunks = append(chunks, s[start:pos])
 			start = pos
 		}
@@ -61,4 +70,25 @@ func splitPlain(s string, max int) []string {
 		s = strings.TrimPrefix(s[cut:], "\n")
 	}
 	return append(chunks, s)
+}
+
+// textToken identifies a chunk's content for row height caching.
+func textToken(s string) string {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return strconv.FormatUint(h.Sum64(), 36)
+}
+
+// textEnv changes with the settings that change how text lays out.
+func (a *App) textEnv() string {
+	return fmt.Sprintf("|%g", a.settings.FontScale)
+}
+
+// textSize is the body text size for replies.
+func (a *App) textSize() float32 {
+	scale := a.settings.FontScale
+	if scale == 0 {
+		scale = 1
+	}
+	return float32(theme.SizeBody * scale)
 }

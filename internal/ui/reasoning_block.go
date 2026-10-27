@@ -10,40 +10,52 @@ import (
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
 
-func (a *App) reasoningBlock(m *store.Message, idx int, text string, active bool) widgets.El {
+// reasoningRows adds a thinking block's rows: its header (with the
+// latest line while thinking) and, when expanded, the text in chunks.
+func (a *App) reasoningRows(m *store.Message, idx int, text string, active bool, add func(key, token string, build func() widgets.El)) {
 	key := fmt.Sprintf("%s/think/%d", m.ID, idx)
 	open := a.expanded[key]
 	label := "Thought process"
 	if active {
 		label = "Thinking…"
 	}
-	header := widgets.Tap(key, label, func(s giode.PressState) widgets.El {
-		lead := widgets.Icon("brain", 15, theme.T.Muted)
-		if active {
-			lead = giode.Spinner(widgets.St{Width: 14, Height: 14, Color: theme.T.Muted})
+	tail := ""
+	if active && !open {
+		tail = strings.TrimSpace(text)
+		if i := strings.LastIndex(tail, "\n"); i >= 0 {
+			tail = tail[i+1:]
 		}
-		chev := "chevron-right"
-		if open {
-			chev = "chevron-down"
-		}
-		return widgets.Row(widgets.St{Gap: 8, Padding: giode.SymmetricInset(10, 6), BorderRadius: 10, Background: widgets.HoverBg(s, "transparent")},
-			lead, widgets.Text(label, theme.SizeFootnote, theme.T.Muted, giode.FontWeightMedium), widgets.Icon(chev, 14, theme.T.Faint))
-	}, func() { a.expanded[key] = !open })
-	if !open {
-		if active {
-			// Show the latest line while thinking.
-			tail := strings.TrimSpace(text)
-			if i := strings.LastIndex(tail, "\n"); i >= 0 {
-				tail = tail[i+1:]
-			}
-			return widgets.Col(widgets.St{Gap: 2}, header, giode.Box(widgets.St{Padding: giode.Inset{Left: 12}}, widgets.Line(tail, theme.SizeFootnote, theme.T.Faint)))
-		}
-		return header
 	}
-	return widgets.Col(widgets.St{Gap: 6, Width: -1}, header,
-		widgets.Row(widgets.St{Gap: 12, Align: giode.AlignStart, Padding: giode.Inset{Left: 12}},
-			giode.Box(widgets.St{Width: 2, Height: -1, MinHeight: 16, Background: theme.T.Border}),
-			giode.Box(widgets.St{FlexGrow: 1}, plainChunks(key, strings.TrimSpace(text), widgets.St{FontSize: theme.SizeFootnote, Color: theme.T.Muted, LineHeight: 20}, false))))
+	add(fmt.Sprintf("think%d", idx), fmt.Sprint(open, active, tail), func() widgets.El {
+		header := widgets.Tap(key, label, func(s giode.PressState) widgets.El {
+			lead := widgets.Icon("brain", 15, theme.T.Muted)
+			if active {
+				lead = giode.Spinner(widgets.St{Width: 14, Height: 14, Color: theme.T.Muted})
+			}
+			chev := "chevron-right"
+			if open {
+				chev = "chevron-down"
+			}
+			return widgets.Row(widgets.St{Gap: 8, Padding: giode.SymmetricInset(10, 6), BorderRadius: 10, Background: widgets.HoverBg(s, "transparent")},
+				lead, widgets.Text(label, theme.SizeFootnote, theme.T.Muted, giode.FontWeightMedium), widgets.Icon(chev, 14, theme.T.Faint))
+		}, func() { a.expanded[key] = !open })
+		if tail == "" {
+			return header
+		}
+		return widgets.Col(widgets.St{Gap: 2}, header, giode.Box(widgets.St{Padding: giode.Inset{Left: 12}}, widgets.Line(tail, theme.SizeFootnote, theme.T.Faint)))
+	})
+	if !open {
+		return
+	}
+	st := widgets.St{FontSize: theme.SizeFootnote, Color: theme.T.Muted, LineHeight: 20}
+	for j, chunk := range splitPlain(strings.TrimSpace(text), chunkSize) {
+		rows := fmt.Sprintf("think%d/%d", idx, j)
+		add(rows, textToken(chunk)+a.textEnv(), func() widgets.El {
+			return widgets.Row(widgets.St{Gap: 12, Align: giode.AlignStart, Padding: giode.Inset{Left: 12}, Width: -1},
+				giode.Box(widgets.St{Width: 2, Height: -1, MinHeight: 16, Background: theme.T.Border}),
+				giode.Box(widgets.St{FlexGrow: 1}, giode.Text(chunk, st)))
+		})
+	}
 }
 
 // plainChunks renders long plain text in separately memoized chunks

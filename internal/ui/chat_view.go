@@ -9,6 +9,8 @@ import (
 type chatView struct {
 	a    *App
 	list *scroll.Scroll
+	// rows lays out only the messages in view.
+	rows *widgets.VirtualColumn
 	// jumpToBottom scrolls to the newest message on the next frame.
 	jumpToBottom bool
 }
@@ -20,6 +22,7 @@ func newChatView(a *App) *chatView {
 	v.list = giode.Scroll(func() widgets.El { return v.messages() },
 		widgets.St{ScrollBar: scrollBar()}).
 		Anchor(giode.AnchorBottom)
+	v.rows = widgets.NewVirtualColumn(v.list)
 	return v
 }
 
@@ -54,11 +57,15 @@ func (v *chatView) messages() widgets.El {
 	if c == nil {
 		return giode.Box(widgets.St{})
 	}
-	var kids []widgets.El
+	var rows []widgets.VRow
 	for i, m := range c.Messages {
-		last := i == len(c.Messages)-1
-		kids = append(kids, a.messageView(c, m, last))
+		mr := a.messageRows(c, m, i == len(c.Messages)-1)
+		if len(mr) > 0 && i > 0 {
+			mr[0].Gap = 22 // between messages
+		}
+		rows = append(rows, mr...)
 	}
+	v.rows.SetRows(rows)
 	return giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Left: 16, Right: 16, Top: 8, Bottom: 24}},
-		widgets.Centered(780, widgets.Col(widgets.St{Width: -1, Gap: 22}, kids...)))
+		widgets.Centered(780, v.rows))
 }

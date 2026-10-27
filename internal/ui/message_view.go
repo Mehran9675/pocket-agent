@@ -1,28 +1,24 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/mehran9675/giode"
 	"github.com/mehran9675/pocket-agent/internal/llm"
 	"github.com/mehran9675/pocket-agent/internal/store"
-	"github.com/mehran9675/pocket-agent/internal/ui/theme"
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
 
-func (a *App) messageView(c *store.Conversation, m *store.Message, last bool) widgets.El {
+// messageRows lays a message out as rows for the message list.
+func (a *App) messageRows(c *store.Conversation, m *store.Message, last bool) []widgets.VRow {
 	if m.Role == llm.RoleUser {
-		return a.userMessage(c, m)
+		token := fmt.Sprint(textToken(m.Text), len(m.Attachments), m.Version, a.isRunning(c), a.textEnv())
+		return []widgets.VRow{{Key: m.ID, Token: token, Build: func() widgets.El { return a.userMessage(c, m) }}}
 	}
-	// Finished replies are cached; they rebuild only when they change.
-	if !m.Streaming {
-		return giode.Memo("msg/"+m.ID, func() widgets.El { return a.assistantMessage(c, m, last) },
-			m.Version, last, len(m.Blocks), theme.T.Dark, a.expandedSig(m), a.isRunning(c))
-	}
-	return a.assistantMessage(c, m, last)
+	return a.assistantRows(c, m, last)
 }
 
-// expandedSig summarizes which parts of m are expanded, for memo deps.
+// expandedSig summarizes which parts of m are expanded, for row tokens.
 func (a *App) expandedSig(m *store.Message) string {
 	var b strings.Builder
 	for k, v := range a.expanded {
