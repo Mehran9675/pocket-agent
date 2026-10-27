@@ -32,6 +32,13 @@ type Store struct {
 
 	memMu  sync.Mutex
 	memory []string
+
+	// vault holds API keys when the credential store works; keys and
+	// settingsFull (settings.json with the keys, the fallback) are
+	// written with the pending batch.
+	vault        *secretVault
+	keys         map[string]string
+	settingsFull []byte
 }
 
 // Open opens (creating) the data directory.
@@ -116,7 +123,12 @@ func (s *Store) flushPending() {
 	s.pendMu.Lock()
 	batch := s.pending
 	s.pending = map[string][]byte{}
+	keys, full := s.keys, s.settingsFull
+	s.keys, s.settingsFull = nil, nil
 	s.pendMu.Unlock()
+	if keys != nil && !s.vault.write(keys) {
+		batch[s.settingsPath()] = full
+	}
 	for path, data := range batch {
 		_ = writeFile(path, data)
 		s.idle.Done()
@@ -133,17 +145,36 @@ func (s *Store) Flush() {
 // LoadSettings reads the settings, or returns defaults.
 func (s *Store) LoadSettings() *Settings {
 	st := DefaultSettings()
-	if err := readJSON(filepath.Join(s.dir, "settings.json"), st); err != nil {
-		return DefaultSettings()
+	if err := readJSON(s.settingsPath(), st); err != nil {
+		st = DefaultSettings()
 	}
 	if st.AutoApprove == nil {
 		st.AutoApprove = map[string]bool{}
 	}
+	if s.vault != nil {
+		s.vault.fillKeys(st)
+	}
 	return st
 }
 
-// SaveSettings persists st.
-func (s *Store) SaveSettings(st *Settings) { s.queue(filepath.Join(s.dir, "settings.json"), st) }
+func (s *Store) settingsPath() string { return filepath.Join(s.dir, "settings.json") }
+
+// SaveSettings persists st, with its API keys in the credential store
+// when UseSecrets enabled it.
+func (s *Store) SaveSettings(st *Settings) {
+	if s.vault == nil {
+		s.queue(s.settingsPath(), st)
+		return
+	}
+	full, err := json.Marshal(st)
+	if err != nil {
+		return
+	}
+	s.pendMu.Lock()
+	s.keys, s.settingsFull = keysOf(st), full
+	s.pendMu.Unlock()
+	s.queue(s.settingsPath(), withoutKeys(st))
+}
 
 // LoadAgents reads custom agents merged after the built-in ones.
 func (s *Store) LoadAgents() []*Agent {

@@ -10,7 +10,7 @@ import (
 func (a *App) pageScaffold(key, title string, compact bool, actions widgets.El, body func() widgets.El) widgets.El {
 	header := widgets.Row(widgets.St{Height: 56, Padding: giode.SymmetricInset(8, 0), Gap: 4, Width: -1},
 		widgets.IconButton("back/"+key, "chevron-left", "Back", 22, theme.T.Text, a.back),
-		widgets.Line(title, theme.SizeHeadline+1, theme.T.Text, giode.FontWeightBold),
+		widgets.Line(title, theme.SizeHeadline+1, theme.T.Text, giode.FontWeightSemiBold),
 		widgets.Spacer(),
 		widgets.When(actions != nil, func() widgets.El { return actions }),
 	)

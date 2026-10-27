@@ -25,7 +25,7 @@ func (s *sidebarView) conversationList() widgets.El {
 		if bucket != last {
 			last = bucket
 			kids = append(kids, giode.Box(widgets.St{Padding: giode.Inset{Left: 12, Top: 14, Bottom: 4}},
-				widgets.Text(bucket, theme.SizeCaption, theme.T.Muted, giode.FontWeightBold)))
+				widgets.Text(bucket, theme.SizeCaption, theme.T.Muted, giode.FontWeightSemiBold)))
 		}
 		kids = append(kids, s.convRow(c))
 		count++

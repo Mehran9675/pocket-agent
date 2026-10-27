@@ -59,7 +59,7 @@ func (a *App) researchCard(m *store.Message) widgets.El {
 		return widgets.Row(widgets.St{Gap: 10, Width: -1},
 			lead,
 			widgets.Col(widgets.St{Gap: 2, FlexGrow: 1},
-				widgets.Text(status, theme.SizeCallout, theme.T.Text, giode.FontWeightBold),
+				widgets.Text(status, theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
 				widgets.Line(summary, theme.SizeFootnote, theme.T.Muted)),
 			widgets.When(finished, func() widgets.El { return widgets.Icon(chev, 16, theme.T.Faint) }))
 	}, func() { a.expanded[key] = !a.expanded[key] })

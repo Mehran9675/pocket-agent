@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/mehran9675/giode"
+	"github.com/mehran9675/giode/components/swipeable"
 	"github.com/mehran9675/pocket-agent/internal/store"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
@@ -11,8 +12,12 @@ func (s *sidebarView) convRow(c *store.Conversation) widgets.El {
 	a := s.a
 	active := a.current == c && a.route == ""
 	running := a.isRunning(c)
-	return widgets.TapAlt("side/conv/"+c.ID, c.Title, func(st giode.PressState) widgets.El {
-		bg := widgets.HoverBg(st, "transparent")
+	row := widgets.TapAlt("side/conv/"+c.ID, c.Title, func(st giode.PressState) widgets.El {
+		base := "transparent"
+		if isMobile() {
+			base = theme.T.Sidebar // opaque over the swipe actions
+		}
+		bg := widgets.HoverBg(st, base)
 		if active {
 			bg = theme.T.Hover
 		}
@@ -47,4 +52,32 @@ func (s *sidebarView) convRow(c *store.Conversation) widgets.El {
 			giode.Box(widgets.St{FlexGrow: 1}, widgets.Line(c.Title, theme.SizeCallout, fg)),
 			trail)
 	}, func() { a.openConversation(c) }, func() { a.openConversationMenu(c) })
+	if !isMobile() {
+		return row
+	}
+	return s.swipeRow(c, row)
+}
+
+// swipeRow lets a conversation row be swiped right to pin and left to
+// delete.
+func (s *sidebarView) swipeRow(c *store.Conversation, row widgets.El) widgets.El {
+	a := s.a
+	pin := "Pin"
+	if c.Pinned {
+		pin = "Unpin"
+	}
+	sw := giode.Keyed("swipe", "conv/"+c.ID+"/"+pin, func() *swipeable.Swipeable {
+		return giode.Swipeable(func() widgets.El { return s.current[c.ID] },
+			[]giode.SwipeAction{{Label: pin, Icon: widgets.Icon("pin", 18, "#ffffff"), Background: theme.T.Primary, Color: "#ffffff", OnTap: func() { a.togglePin(c) }}},
+			[]giode.SwipeAction{{Label: "Delete", Icon: widgets.Icon("trash-2", 18, "#ffffff"), Background: theme.T.Danger, Color: "#ffffff", OnTap: func() {
+				a.ask("Delete conversation?", "“"+c.Title+"” and its files will be removed from this device.", "Delete", true, func() {
+					a.deleteConversation(c)
+				})
+			}}})
+	})
+	if s.current == nil {
+		s.current = map[string]widgets.El{}
+	}
+	s.current[c.ID] = row
+	return sw
 }

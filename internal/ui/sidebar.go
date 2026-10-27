@@ -13,6 +13,9 @@ import (
 type sidebarView struct {
 	a      *App
 	search *input.Input
+	// current holds each conversation row built this frame, for the
+	// swipeable wrapping it.
+	current map[string]widgets.El
 }
 
 func newSidebar(a *App) *sidebarView {
@@ -28,7 +31,7 @@ func (s *sidebarView) view(inDrawer bool) widgets.El {
 	a := s.a
 	top := widgets.Row(widgets.St{Width: -1, Padding: giode.Inset{Left: 16, Right: 8, Top: 12, Bottom: 8}, Gap: 10},
 		widgets.LogoMark(30),
-		widgets.Text("Pocket Agent", theme.SizeHeadline, theme.T.Text, giode.FontWeightBold),
+		widgets.Text("Pocket Agent", theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold),
 		widgets.Spacer(),
 		widgets.IconButton("side/new", "square-pen", "New chat", 19, theme.T.Text2, func() { a.newChat(store.ModeChat, "") }),
 	)

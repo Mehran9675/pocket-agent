@@ -22,7 +22,6 @@ func (a *App) openModelSheet() {
 		}
 	}
 	sh := a.openSheet("models", "Choose a model", func() widgets.El { return a.modelList(search.Text()) })
-	sh.width = 560
 	sh.footer = func() widgets.El {
 		return widgets.Row(widgets.St{Gap: 10, Width: -1},
 			widgets.Button("models/providers", "Providers", "key-round", widgets.BtnSecondary, func() {
@@ -181,7 +180,7 @@ func (a *App) modelList(query string) widgets.El {
 	}
 	if len(a.settings.Providers) == 0 {
 		kids = append(kids, widgets.Gap(0, 8), widgets.Card(widgets.St{},
-			widgets.Text("No cloud providers yet", theme.SizeCallout, theme.T.Text, giode.FontWeightBold),
+			widgets.Text("No cloud providers yet", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
 			widgets.Text("Add an API key for Anthropic, OpenAI, Google, OpenRouter and others to use their models here.", theme.SizeFootnote, theme.T.Muted),
 			widgets.Button("models/addprov", "Add a provider", "plus", widgets.BtnPrimary, func() {
 				a.closeSheet()

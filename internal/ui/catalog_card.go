@@ -42,9 +42,9 @@ func (a *App) catalogCard(m local.CatalogModel, dls map[string]local.Download) w
 	}
 	return widgets.Card(widgets.St{Gap: 10},
 		widgets.Row(widgets.St{Gap: 12, Width: -1, Align: giode.AlignStart},
-			widgets.Avatar(m.Vendor[:1], vendorColor(m.Vendor), 36),
+			widgets.Avatar(m.Vendor, 36),
 			widgets.Col(widgets.St{Gap: 3, FlexGrow: 1},
-				widgets.Row(widgets.St{Gap: 8}, widgets.Text(m.Name, theme.SizeCallout, theme.T.Text, giode.FontWeightBold)),
+				widgets.Row(widgets.St{Gap: 8}, widgets.Text(m.Name, theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold)),
 				widgets.Text(m.Vendor+" · "+tools.HumanBytes(m.Size)+" · "+m.License, theme.SizeCaption, theme.T.Muted)),
 			action,
 		),

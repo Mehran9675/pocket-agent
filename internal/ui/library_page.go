@@ -29,7 +29,7 @@ func (a *App) libraryBody() widgets.El {
 		widgets.Row(widgets.St{Gap: 12, Width: -1},
 			widgets.IconTile("shield-check", "#34d399", 40),
 			widgets.Col(widgets.St{Gap: 2, FlexGrow: 1},
-				widgets.Text("Private by design", theme.SizeHeadline, theme.T.Text, giode.FontWeightBold),
+				widgets.Text("Private by design", theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold),
 				widgets.Text("On-device models run entirely on this "+deviceNoun()+". Nothing you type leaves it, and they work offline.", theme.SizeFootnote, theme.T.Text2))),
 		widgets.Row(widgets.St{Gap: 16},
 			stat("Memory", ram), stat("Engine", ifStr(a.engine.Available(), "llama.cpp", "Unavailable")),

@@ -10,7 +10,7 @@ import (
 
 func (a *App) importModel() {
 	go func() {
-		f, err := a.win.OpenFile(context.Background(), giode.FileFilter{Extensions: []string{"gguf"}})
+		files, err := a.win.PickFiles(context.Background(), giode.PickOptions{Types: []string{"gguf"}})
 		if errors.Is(err, giode.ErrCanceled) {
 			return
 		}
@@ -18,8 +18,12 @@ func (a *App) importModel() {
 			a.toast(giode.ToastError, err.Error())
 			return
 		}
+		if len(files) == 0 {
+			return
+		}
+		f := files[0]
 		defer f.Close()
-		name := fileName(f, 0, false)
+		name := f.Name
 		a.toast(giode.ToastInfo, "Importing "+name+"…")
 		m, err := a.models.Import(name, io.Reader(f))
 		if err != nil {

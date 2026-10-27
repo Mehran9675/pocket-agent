@@ -1,26 +1,25 @@
 package ui
 
 import (
-	"gioui.org/layout"
 	"github.com/mehran9675/giode"
-	"github.com/mehran9675/giode/components/kit"
 	"github.com/mehran9675/giode/components/scroll"
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
 
 type chatView struct {
-	a            *App
-	list         *scroll.Scroll
+	a    *App
+	list *scroll.Scroll
+	// jumpToBottom scrolls to the newest message on the next frame.
 	jumpToBottom bool
-	// stick keeps the view pinned to the bottom while a reply streams,
-	// until the user scrolls up.
-	stick   bool
-	lastLen int
 }
 
 func newChatView(a *App) *chatView {
-	v := &chatView{a: a, stick: true}
-	v.list = giode.Scroll(func() widgets.El { return v.messages() }, widgets.St{ScrollBar: giode.ScrollBar{Width: 4, ThumbColor: "theme.border", Radius: 2}})
+	v := &chatView{a: a}
+	// Anchored to the bottom: follows a streaming reply until the user
+	// scrolls up, and resumes when they scroll back down.
+	v.list = giode.Scroll(func() widgets.El { return v.messages() },
+		widgets.St{ScrollBar: giode.ScrollBar{Width: 4, ThumbColor: "theme.border", Radius: 2}}).
+		Anchor(giode.AnchorBottom)
 	return v
 }
 
@@ -40,27 +39,13 @@ func (v *chatView) view(compact bool) widgets.El {
 	)
 }
 
-// listView lays out the message scroll, keeping it pinned to the
-// bottom while new content arrives.
+// listView lays out the message scroll.
 func (v *chatView) listView() widgets.El {
-	return giode.Raw(func(gtx layout.Context) layout.Dimensions {
-		if v.jumpToBottom {
-			v.stick, v.jumpToBottom = true, false
-		} else if v.list.ContentHeight() == v.lastLen {
-			// Content unchanged: whether we're at the bottom is the
-			// user's doing.
-			v.stick = v.list.AtBottom()
-		}
-		if v.stick {
-			v.list.ScrollTo(1e9)
-		}
-		dims := v.list.Layout(gtx)
-		if h := v.list.ContentHeight(); h != v.lastLen {
-			v.lastLen = h
-			kit.RequestFrame(gtx)
-		}
-		return dims
-	})
+	if v.jumpToBottom {
+		v.jumpToBottom = false
+		v.list.ScrollToBottom()
+	}
+	return v.list
 }
 
 func (v *chatView) messages() widgets.El {

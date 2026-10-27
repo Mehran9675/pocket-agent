@@ -10,7 +10,7 @@ func (a *App) aboutBody() widgets.El {
 	return widgets.Col(widgets.St{Gap: 16, Width: -1, Align: giode.AlignCenter},
 		widgets.Gap(0, 8),
 		widgets.LogoMark(64),
-		widgets.Text("Pocket Agent", theme.SizeDisplay, theme.T.Text, giode.FontWeightBold),
+		widgets.Text("Pocket Agent", theme.SizeDisplay, theme.T.Text, giode.FontWeightSemiBold),
 		widgets.Text("Version "+Version, theme.SizeFootnote, theme.T.Muted),
 		giode.Text("Private AI chat, research and agents for iPhone, iPad and Android - on-device or with the cloud models you choose.", widgets.St{FontSize: theme.SizeCallout, Color: theme.T.Text2, TextAlign: giode.TextAlignCenter}),
 		widgets.Group(

@@ -150,6 +150,7 @@ func (o *observer) approve(ctx context.Context, call llm.ToolCall) bool {
 		if t := o.findTool(call.ID); t != nil {
 			t.Status = store.ToolPending
 		}
+		o.a.approvalNeeded()
 	})
 	select {
 	case ok := <-ch:

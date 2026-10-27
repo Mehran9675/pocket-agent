@@ -19,7 +19,7 @@ func (a *App) approvalCard(c *store.Conversation, t *store.ToolRun, icon, title 
 		widgets.Row(widgets.St{Gap: 10},
 			widgets.IconTile("shield-check", theme.T.Warning, 30),
 			widgets.Col(widgets.St{Gap: 2, FlexGrow: 1},
-				widgets.Text("Allow this action?", theme.SizeCallout, theme.T.Text, giode.FontWeightBold),
+				widgets.Text("Allow this action?", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
 				widgets.Line(title, theme.SizeFootnote, theme.T.Text2)),
 		),
 		widgets.MonoBox("Details", args),

@@ -7,5 +7,5 @@ import (
 )
 
 func stat(label, value string) widgets.El {
-	return widgets.Col(widgets.St{Gap: 2}, widgets.Text(label, theme.SizeCaption, theme.T.Muted), widgets.Text(value, theme.SizeCallout, theme.T.Text, giode.FontWeightBold))
+	return widgets.Col(widgets.St{Gap: 2}, widgets.Text(label, theme.SizeCaption, theme.T.Muted), widgets.Text(value, theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold))
 }

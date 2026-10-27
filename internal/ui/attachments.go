@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 
@@ -52,14 +51,10 @@ func (a *App) importAttachment(name string, data []byte) (store.Attachment, erro
 	return att, nil
 }
 
-// pickFiles opens the system picker and attaches the chosen files.
-func (a *App) pickFiles(images bool) {
+// pickFiles opens the system file picker and attaches the chosen files.
+func (a *App) pickFiles() {
 	go func() {
-		var filter []giode.FileFilter
-		if images {
-			filter = append(filter, giode.FileFilter{Extensions: []string{"png", "jpg", "jpeg", "webp", "gif"}})
-		}
-		files, err := a.win.OpenFiles(context.Background(), filter...)
+		files, err := a.win.PickFiles(context.Background(), giode.PickOptions{Multiple: true})
 		if errors.Is(err, giode.ErrCanceled) {
 			return
 		}
@@ -67,32 +62,43 @@ func (a *App) pickFiles(images bool) {
 			a.toast(giode.ToastError, "Couldn't open the picker: "+err.Error())
 			return
 		}
-		for i, f := range files {
-			name := fileName(f, i, images)
-			pending := a.composer.addPending(name)
-			go func(f io.ReadCloser, name string, pending *pendingAttachment) {
-				defer f.Close()
-				data, err := io.ReadAll(io.LimitReader(f, 64<<20))
-				var att store.Attachment
-				if err == nil {
-					att, err = a.importAttachment(name, data)
-				}
-				a.Post(func() { a.composer.resolvePending(pending, att, err) })
-			}(f, name, pending)
+		for _, f := range files {
+			a.attachPicked(f)
 		}
 	}()
 }
 
-// fileName finds a picked file's name; Giode's picker doesn't report
-// it on every platform (see docs/giode-requests.md).
-func fileName(f io.ReadCloser, i int, image bool) string {
-	if n, ok := f.(interface{ Name() string }); ok {
-		if base := lastPathElem(n.Name()); base != "" {
-			return base
+// pickPhoto attaches a photo from the library or, on Android, the camera.
+func (a *App) pickPhoto(source giode.PhotoSource) {
+	go func() {
+		f, err := a.win.PickPhoto(context.Background(), giode.PhotoOptions{Source: source, MaxSide: docs.MaxImageSide})
+		if errors.Is(err, giode.ErrCanceled) {
+			return
 		}
+		if err != nil {
+			a.toast(giode.ToastError, "Couldn't get the photo: "+err.Error())
+			return
+		}
+		a.attachPicked(f)
+	}()
+}
+
+// attachPicked reads and imports one picked file.
+func (a *App) attachPicked(f giode.PickedFile) {
+	name := f.Name
+	if name == "" {
+		name = "Attachment"
 	}
-	if image {
-		return fmt.Sprintf("Image %d", i+1)
-	}
-	return fmt.Sprintf("Document %d", i+1)
+	a.Post(func() {
+		pending := a.composer.addPending(name)
+		go func() {
+			defer f.Close()
+			data, err := io.ReadAll(io.LimitReader(f, 64<<20))
+			var att store.Attachment
+			if err == nil {
+				att, err = a.importAttachment(name, data)
+			}
+			a.Post(func() { a.composer.resolvePending(pending, att, err) })
+		}()
+	})
 }

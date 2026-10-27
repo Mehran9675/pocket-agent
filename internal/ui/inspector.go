@@ -44,12 +44,12 @@ func (a *App) inspector() widgets.El {
 			if ag := a.agentByID(c.AgentID); ag != nil {
 				title = ag.Name
 				kids = append(kids, widgets.Row(widgets.St{Gap: 12, Width: -1}, widgets.IconTile(ag.Icon, ag.Color, 40),
-					widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(ag.Name, theme.SizeHeadline, theme.T.Text, giode.FontWeightBold), widgets.Text(ag.Description, theme.SizeFootnote, theme.T.Muted))))
+					widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(ag.Name, theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold), widgets.Text(ag.Description, theme.SizeFootnote, theme.T.Muted))))
 			}
 		} else {
 			title = "Deep research"
 			kids = append(kids, widgets.Row(widgets.St{Gap: 12, Width: -1}, widgets.IconTile("telescope", "#38bdf8", 40),
-				widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(title, theme.SizeHeadline, theme.T.Text, giode.FontWeightBold), widgets.Text("Sources gathered across this conversation", theme.SizeFootnote, theme.T.Muted))))
+				widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(title, theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold), widgets.Text("Sources gathered across this conversation", theme.SizeFootnote, theme.T.Muted))))
 		}
 		status := "Idle"
 		if running {
@@ -84,6 +84,6 @@ func (a *App) inspector() widgets.El {
 		return widgets.Col(widgets.St{Gap: 16, Width: -1, Padding: giode.UniformInset(16)}, kids...)
 	}
 	return widgets.Col(widgets.St{Width: -1, Height: -1},
-		widgets.Row(widgets.St{Height: 56, Padding: giode.SymmetricInset(16, 0), Width: -1}, widgets.Text("Inspector", theme.SizeCallout, theme.T.Muted, giode.FontWeightBold)),
+		widgets.Row(widgets.St{Height: 56, Padding: giode.SymmetricInset(16, 0), Width: -1}, widgets.Text("Inspector", theme.SizeCallout, theme.T.Muted, giode.FontWeightSemiBold)),
 		giode.Box(widgets.St{FlexGrow: 1, Width: -1}, a.scroll("inspector", body)))
 }

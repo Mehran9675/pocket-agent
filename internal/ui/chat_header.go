@@ -19,7 +19,7 @@ func (v *chatView) header(compact bool) widgets.El {
 		if ref.IsZero() {
 			lead = widgets.Icon("sparkles", 15, theme.T.Primary)
 		}
-		kids := []widgets.El{lead, widgets.Line(name, theme.SizeCallout, theme.T.Text, giode.FontWeightBold)}
+		kids := []widgets.El{lead, widgets.Line(name, theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold)}
 		if provider != "" && !compact {
 			kids = append(kids, widgets.Line(provider, theme.SizeFootnote, theme.T.Muted))
 		}

@@ -1,14 +1,14 @@
 package theme
 
 import (
-	"gioui.org/x/pref/theme"
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/pocket-agent/internal/store"
 )
 
-// SystemPrefersDark asks the platform for its color scheme.
+// SystemPrefersDark asks the platform for its color scheme, defaulting
+// to dark when it can't tell.
 func SystemPrefersDark() bool {
-	dark, err := theme.IsDarkMode()
+	dark, err := giode.SystemDarkMode()
 	if err != nil {
 		return true
 	}

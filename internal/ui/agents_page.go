@@ -37,7 +37,7 @@ func (a *App) agentsBody() widgets.El {
 				widgets.Row(widgets.St{Gap: 12, Width: -1},
 					widgets.IconTile(ag.Icon, ag.Color, 42),
 					widgets.Col(widgets.St{Gap: 2, FlexGrow: 1},
-						widgets.Row(widgets.St{Gap: 8}, widgets.Text(ag.Name, theme.SizeHeadline, theme.T.Text, giode.FontWeightBold), widgets.When(ag.Builtin, func() widgets.El { return widgets.Badge("Built-in", theme.T.Muted, theme.T.Surface2) })),
+						widgets.Row(widgets.St{Gap: 8}, widgets.Text(ag.Name, theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold), widgets.When(ag.Builtin, func() widgets.El { return widgets.Badge("Built-in", theme.T.Muted, theme.T.Surface2) })),
 						widgets.Text(fmt.Sprintf("%d tools · up to %d steps", len(ag.Tools), ag.MaxSteps), theme.SizeCaption, theme.T.Muted)),
 					widgets.IconButton("agent/edit/"+ag.ID, "sliders-horizontal", "Edit agent", 17, theme.T.Muted, func() { a.navigate("agents/edit/" + ag.ID) }),
 				),

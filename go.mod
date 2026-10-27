@@ -5,10 +5,11 @@ go 1.26.6
 require (
 	gioui.org v0.10.3
 	gioui.org/x v0.10.3
+	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0
 	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/dop251/goja v0.0.0-20261026132650-6b6a90e51946
 	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
-	github.com/mehran9675/giode v0.1.1-alpha.1
+	github.com/mehran9675/giode v0.1.2-alpha.1
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.48.0
@@ -17,10 +18,11 @@ require (
 
 require (
 	gioui.org/shader v1.0.9 // indirect
-	git.wow.st/gmp/jni v0.0.0-20210610011705-34026c7e22d0 // indirect
+	git.sr.ht/~jackmordaunt/go-toast v1.0.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/dlclark/regexp2/v2 v2.8.1 // indirect
+	github.com/esiqveland/notify v0.11.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

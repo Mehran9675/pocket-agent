@@ -73,6 +73,7 @@ func (a *App) startTurn(c *store.Conversation) {
 	ctx, cancel := context.WithCancel(context.Background())
 	rs := &runState{cancel: cancel, approvals: map[string]chan bool{}}
 	a.runs[c.ID] = rs
+	a.runStarted(ref)
 	a.st.SaveConversation(c)
 
 	history := agent.BuildHistory(a.st, c.Messages[:len(c.Messages)-1], info.Vision)
@@ -180,6 +181,7 @@ func (a *App) finishTurn(c *store.Conversation, msg *store.Message, rs *runState
 	if a.runs[c.ID] == rs {
 		delete(a.runs, c.ID)
 	}
+	defer a.runEnded(c, msg, ref)
 	msg.Streaming = false
 	msg.Duration = time.Since(started)
 	for i := range msg.Blocks {

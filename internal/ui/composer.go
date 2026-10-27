@@ -25,22 +25,25 @@ type pendingAttachment struct {
 }
 
 type composer struct {
-	a       *App
-	in      *input.Input
-	pending []*pendingAttachment
-	nextID  int
-	thumbs  map[string]image.Image
+	// dictation stops the running speech recognition, nil when idle.
+	dictation func()
+	a         *App
+	in        *input.Input
+	pending   []*pendingAttachment
+	nextID    int
+	thumbs    map[string]image.Image
 }
 
 func newComposer(a *App) *composer {
 	c := &composer{a: a, thumbs: map[string]image.Image{}}
-	// Styles use theme tokens: a stateful component keeps the styles it
-	// was created with, and tokens follow theme changes. The placeholder
-	// is drawn by the composer, since it changes with the mode.
-	c.in = giode.Input.Text("", widgets.St{
+	// Grows from one to eight lines. With a hardware keyboard Enter
+	// sends and Shift+Enter starts a new line; phones send with the
+	// button.
+	c.in = giode.Input.Text("Message Pocket Agent", widgets.St{
 		Background: "transparent", BorderColor: "transparent", Padding: giode.Inset{Top: 6, Bottom: 6, Left: 4, Right: 4},
-		Color: "theme.text", FontSize: theme.SizeBody, MaxHeight: 180,
-	}).Multiline(true).Label("Message")
+		Color: "theme.text", FontSize: theme.SizeBody,
+	}).Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label("Message")
+	c.in.Submit(func(string) { c.submit() })
 	return c
 }
 
@@ -115,7 +118,12 @@ func (c *composer) submit() {
 	if text == "" && len(atts) == 0 {
 		return
 	}
+	c.stopDictation()
 	c.reset()
+	giode.Haptic(giode.HapticLight)
+	if isMobile() {
+		c.a.win.HideKeyboard()
+	}
 	c.a.send(text, atts)
 }
 
@@ -195,6 +203,9 @@ func (c *composer) view(compact bool) widgets.El {
 		tools = append(tools, widgets.Chip("composer/depth", labels[depth], "gauge", false, a.openDepthSheet))
 	}
 	canSend := !c.busy() && (c.in.Text() != "" || len(c.pending) > 0)
+	if dictationSupported() && !running {
+		tools = append(tools, c.micButton())
+	}
 	var action widgets.El
 	if running {
 		action = widgets.Tap("composer/stop", "Stop", func(s giode.PressState) widgets.El {
@@ -219,15 +230,9 @@ func (c *composer) view(compact bool) widgets.El {
 	if len(atts) > 0 {
 		boxKids = append(boxKids, giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap, Padding: giode.Inset{Bottom: 4}}, atts...))
 	}
-	inputEl := giode.Box(widgets.St{Width: -1},
-		c.in,
-		widgets.When(c.in.Text() == "", func() widgets.El {
-			return giode.Box(widgets.St{Position: giode.PositionAbsolute, Top: 6, Left: 4},
-				widgets.Line(placeholder, theme.SizeBody, theme.T.Muted))
-		}),
-	)
+	c.in.Placeholder(placeholder)
 	boxKids = append(boxKids,
-		inputEl,
+		c.in,
 		widgets.Row(widgets.St{Width: -1, Gap: 6}, append(tools, widgets.Spacer(), action)...),
 	)
 	box := giode.Box(widgets.St{

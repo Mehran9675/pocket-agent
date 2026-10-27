@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"gioui.org/app"
+	_ "gioui.org/app/permission/microphone" // dictation on Android
 
 	"github.com/mehran9675/giode"
 
@@ -29,6 +30,11 @@ func main() {
 	if err := theme.RegisterIcons(); err != nil {
 		log.Fatal(err)
 	}
+	// API keys live in the Keychain / Android Keystore when available.
+	giode.SecureStore.Service = "com.mehran9675.pocketagent"
+	if !st.UseSecrets(giode.SecureStore) {
+		log.Print("pocket-agent: no credential store; API keys stay in settings.json")
+	}
 	settings := st.LoadSettings()
 	theme.ApplyTheme(settings.Theme, settings.Accent)
 
@@ -41,12 +47,23 @@ func main() {
 		Background: "theme.background",
 		OnBackground: func() {
 			if pa != nil {
+				pa.Backgrounded()
 				pa.SaveAll()
+			}
+		},
+		OnForeground: func() {
+			if pa != nil {
+				pa.Foregrounded()
 			}
 		},
 		OnShutdown: func() {
 			if pa != nil {
 				pa.SaveAll()
+			}
+		},
+		OnSystemThemeChange: func(dark bool) {
+			if pa != nil {
+				pa.SystemThemeChanged(dark)
 			}
 		},
 	})

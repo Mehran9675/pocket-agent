@@ -10,12 +10,6 @@ import (
 
 // View is the root element.
 func (a *App) View() widgets.El {
-	if a.settings.Theme == "system" {
-		// Follow the platform scheme as it changes.
-		if dark := theme.SystemPrefersDark(); dark != theme.T.Dark {
-			a.Theme()
-		}
-	}
 	body := giode.Responsive(
 		giode.Breakpoint{MaxWidth: 699, Name: "compact", View: a.compactView},
 		giode.Breakpoint{MaxWidth: 1149, Name: "medium", View: a.wideView},
@@ -40,8 +34,7 @@ func (a *App) compactView() widgets.El {
 	}
 	return giode.Box(widgets.St{Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn},
 		page,
-		// The drawer overlays the page rather than taking layout space.
-		giode.Box(widgets.St{Position: giode.PositionAbsolute, Top: 0, Left: 0, Width: -1, Height: -1, ZIndex: 10}, a.drawer),
+		a.drawer, // an overlay: takes no space
 	)
 }
 

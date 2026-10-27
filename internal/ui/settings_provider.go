@@ -87,7 +87,7 @@ func (a *App) providerBody(id string) widgets.El {
 	}
 	kids := []widgets.El{
 		widgets.Row(widgets.St{Gap: 14, Width: -1}, widgets.IconTile(providerIcon(id), providerColor(id), 48),
-			widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(pre.Name, theme.SizeTitle, theme.T.Text, giode.FontWeightBold),
+			widgets.Col(widgets.St{Gap: 2, FlexGrow: 1}, widgets.Text(pre.Name, theme.SizeTitle, theme.T.Text, giode.FontWeightSemiBold),
 				widgets.Text(map[llm.Kind]string{llm.KindAnthropic: "Claude models via the Anthropic API", llm.KindGemini: "Gemini models via Google AI Studio", llm.KindOpenAI: "OpenAI-compatible API"}[pre.Kind], theme.SizeFootnote, theme.T.Muted))),
 		widgets.Card(widgets.St{Gap: 16},
 			formRow("API key", keyIn, keyHint),

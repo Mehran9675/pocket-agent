@@ -43,7 +43,7 @@ func (a *App) fileViewer(spec string, compact bool) widgets.El {
 			body = a.markdown("file/"+spec, string(b))
 		} else {
 			body = giode.Box(widgets.St{Width: -1, Padding: giode.UniformInset(14), BorderRadius: 12, Background: theme.T.CodeBg, BorderWidth: 1, BorderColor: theme.T.CodeBorder},
-				widgets.CodeText(string(b), 13, theme.T.Text))
+				widgets.CodeText("file/"+spec, string(b), 13, theme.T.Text))
 		}
 		return widgets.Col(widgets.St{Gap: 14, Width: -1}, widgets.Text(info, theme.SizeCaption, theme.T.Muted), body)
 	})

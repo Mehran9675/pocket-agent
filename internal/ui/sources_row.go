@@ -37,7 +37,7 @@ func (a *App) sourcesRow(id string, srcs []tools.Source) widgets.El {
 			return widgets.Row(widgets.St{Gap: 8, Padding: giode.Inset{Left: 6, Right: 10, Top: 5, Bottom: 5}, BorderRadius: 10, MaxWidth: 260,
 				Background: widgets.HoverBg(st, theme.T.Surface), BorderWidth: 1, BorderColor: theme.T.Border},
 				giode.Box(widgets.St{Width: 20, Height: 20, BorderRadius: 6, Background: theme.T.Surface2, Align: giode.AlignCenter, Justify: giode.JustifyCenter},
-					widgets.Text(letter, theme.SizeMicro, theme.T.Text2, giode.FontWeightBold)),
+					widgets.Text(letter, theme.SizeMicro, theme.T.Text2, giode.FontWeightSemiBold)),
 				widgets.Col(widgets.St{Gap: 0}, widgets.Line(fmt.Sprintf("%d. %s", i+1, title), theme.SizeCaption, theme.T.Text2, giode.FontWeightMedium), widgets.Line(host, theme.SizeMicro, theme.T.Faint)))
 		}, func() { a.openLink(s.URL) }))
 	}

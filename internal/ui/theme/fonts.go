@@ -7,8 +7,7 @@ import (
 	"github.com/mehran9675/pocket-agent/assets"
 )
 
-// RegisterFonts loads the embedded fonts. Inter SemiBold stands in for
-// "bold": it reads crisper on small screens.
+// RegisterFonts loads the embedded fonts.
 func RegisterFonts() error {
 	type face struct {
 		file   string
@@ -20,8 +19,8 @@ func RegisterFonts() error {
 		{"Inter-Regular.ttf", FontUI, font.Normal, font.Regular},
 		{"Inter-Italic.ttf", FontUI, font.Normal, font.Italic},
 		{"Inter-Medium.ttf", FontUI, font.Medium, font.Regular},
-		{"Inter-SemiBold.ttf", FontUI, font.Bold, font.Regular},
-		{"Inter-Bold.ttf", FontUI, font.ExtraBold, font.Regular},
+		{"Inter-SemiBold.ttf", FontUI, font.SemiBold, font.Regular},
+		{"Inter-Bold.ttf", FontUI, font.Bold, font.Regular},
 		{"JetBrainsMono-Regular.ttf", FontMono, font.Normal, font.Regular},
 	}
 	var coll []font.FontFace

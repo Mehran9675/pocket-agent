@@ -15,7 +15,7 @@ func (v *chatView) onboarding(compact bool) widgets.El {
 				Gap: 10, Padding: giode.UniformInset(18), BorderRadius: 18, Width: -1,
 				Background: widgets.HoverBg(s, theme.T.Surface), BorderWidth: 1, BorderColor: theme.T.Border,
 			},
-				widgets.Row(widgets.St{Gap: 12}, widgets.IconTile(icon, color, 40), widgets.Text(title, theme.SizeHeadline, theme.T.Text, giode.FontWeightBold)),
+				widgets.Row(widgets.St{Gap: 12}, widgets.IconTile(icon, color, 40), widgets.Text(title, theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold)),
 				widgets.Text(body, theme.SizeCallout, theme.T.Text2),
 				widgets.Row(widgets.St{Gap: 6}, widgets.Text(cta, theme.SizeCallout, theme.T.PrimaryText, giode.FontWeightMedium), widgets.Icon("chevron-right", 16, theme.T.PrimaryText)),
 			)
@@ -24,7 +24,7 @@ func (v *chatView) onboarding(compact bool) widgets.El {
 	return giode.Box(widgets.St{Width: -1, Padding: giode.SymmetricInset(20, 24)}, widgets.Centered(560,
 		widgets.Col(widgets.St{Width: -1, Gap: 16, Align: giode.AlignCenter},
 			widgets.LogoMark(60),
-			widgets.Text("Welcome to Pocket Agent", theme.SizeDisplay, theme.T.Text, giode.FontWeightBold),
+			widgets.Text("Welcome to Pocket Agent", theme.SizeDisplay, theme.T.Text, giode.FontWeightSemiBold),
 			giode.Text("A private AI workspace in your pocket: chat, research and autonomous agents - running on your device or on the cloud models you choose.",
 				widgets.St{FontSize: theme.SizeBody, Color: theme.T.Muted, TextAlign: giode.TextAlignCenter, LineHeight: 22}),
 			widgets.Gap(0, 4),

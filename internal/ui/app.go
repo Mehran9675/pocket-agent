@@ -2,22 +2,24 @@
 // shell (drawer on phones, sidebar on tablets, sidebar and inspector on
 // wide iPads), the chat, agent and research views, the model library and
 // settings. Each view lives in its own file; shared components are in
-// package widgets, design tokens in theme and Markdown in markdown.
+// package widgets and design tokens in theme.
 package ui
 
 import (
 	"context"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/giode/components/drawer"
 	"github.com/mehran9675/giode/components/input"
 	"github.com/mehran9675/giode/components/scroll"
+	"github.com/mehran9675/giode/components/sheet"
 	"github.com/mehran9675/pocket-agent/internal/local"
 	"github.com/mehran9675/pocket-agent/internal/store"
 	"github.com/mehran9675/pocket-agent/internal/tools"
-	"github.com/mehran9675/pocket-agent/internal/ui/markdown"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
 	"github.com/mehran9675/pocket-agent/internal/ui/widgets"
 )
@@ -39,6 +41,11 @@ type App struct {
 	draft    draft
 
 	runs map[string]*runState
+	// inBackground is set while the app is off screen; localRuns and
+	// releaseAwake track keeping the device awake during runs.
+	inBackground atomic.Bool
+	localRuns    int
+	releaseAwake func()
 
 	engine     local.Engine
 	models     *local.Store
@@ -54,16 +61,19 @@ type App struct {
 	route   string
 	history []string
 
-	drawerOpen bool
-	drawer     *drawer.Drawer
-	sheet      *sheet
-	confirm    *confirmState
-	toasts     *giode.ToasterElement
+	drawerOpen   bool
+	drawer       *drawer.Drawer
+	sheet        *sheetSpec
+	sheetOpen    bool
+	sheetPanel   *sheet.Sheet
+	confirmOpen  bool
+	confirmPanel *sheet.Sheet
+	confirm      *confirmState
+	toasts       *giode.ToasterElement
 
 	composer *composer
 	chat     *chatView
 
-	docs     *giode.KeyedCache[string, *markdown.Doc]
 	expanded map[string]bool
 	inputs   map[string]*input.Input
 	scrolls  map[string]*scroll.Scroll
@@ -107,14 +117,13 @@ func New(win *giode.App, st *store.Store) *App {
 		mcp:            map[string]*tools.MCPClient{},
 		mcpTools:       map[string][]*tools.Tool{},
 		mcpStatus:      map[string]string{},
-		docs:           giode.NewKeyedCache[string, *markdown.Doc]().Retain(600),
 		expanded:       map[string]bool{},
 		inputs:         map[string]*input.Input{},
 		scrolls:        map[string]*scroll.Scroll{},
 		refresh:        map[string]bool{},
 		providerStatus: map[string]string{},
 		hfFiles:        map[string][]local.HFFile{},
-		ram:            local.DeviceMemory(),
+		ram:            giode.Device().TotalRAM,
 	}
 	a.draft = draft{mode: store.ModeChat, depth: store.DepthStandard, model: a.settings.DefaultModel}
 	a.models = local.NewStore(st.ModelsDir())
@@ -149,10 +158,20 @@ func New(win *giode.App, st *store.Store) *App {
 	a.sidebar = newSidebar(a)
 	a.drawer = giode.Drawer(&a.drawerOpen, giode.SideLeft, 300, func() giode.Element {
 		return giode.Box(widgets.St{Width: -1, Height: -1, Background: theme.T.Sidebar}, a.sidebar.view(true))
-	}, widgets.St{Background: "transparent", Padding: giode.UniformInset(0)})
+	}, widgets.St{Background: "transparent", Padding: giode.UniformInset(0)}).
+		// The left-edge swipe is Android's Back gesture; iOS has none.
+		SwipeToOpen(runtime.GOOS == "ios")
 	a.ensureDefaultModel()
 	a.connectMCP()
 	return a
+}
+
+// SystemThemeChanged follows the platform's light/dark switch when the
+// theme is set to System. Run it on the UI goroutine.
+func (a *App) SystemThemeChanged(dark bool) {
+	if a.settings.Theme == "system" {
+		a.Theme()
+	}
 }
 
 // Theme re-applies the theme from settings.

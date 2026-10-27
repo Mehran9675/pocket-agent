@@ -48,7 +48,7 @@ func (a *App) planCard(plan []tools.PlanItem, live bool) widgets.El {
 	return widgets.Card(widgets.St{Gap: 12},
 		widgets.Row(widgets.St{Gap: 8, Width: -1},
 			widgets.Icon("list-todo", 16, theme.T.Primary),
-			widgets.Text("Plan", theme.SizeCallout, theme.T.Text, giode.FontWeightBold),
+			widgets.Text("Plan", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
 			widgets.Spacer(),
 			widgets.Text(fmt.Sprintf("%d of %d", done, len(plan)), theme.SizeFootnote, theme.T.Muted)),
 		giode.Progress(progress, widgets.St{Color: theme.T.Primary, Background: theme.T.Surface2, Height: 4}),

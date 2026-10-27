@@ -20,7 +20,8 @@ func Tap(key string, label string, content func(s giode.PressState) El, onClick 
 	return p
 }
 
-// TapAlt is Tap with a secondary (right-click / long-press menu) action.
+// TapAlt is Tap with a secondary action, run on a right click or a
+// long press.
 func TapAlt(key, label string, content func(s giode.PressState) El, onClick, onAlt func()) El {
 	p := giode.Keyed("tap", key, func() *giode.PressableElement { return giode.Pressable(content) })
 	p.Content(content).Label(label).OnClick(func(e giode.ClickEvent) {
@@ -32,6 +33,11 @@ func TapAlt(key, label string, content func(s giode.PressState) El, onClick, onA
 		}
 	}).OnSecondaryClick(func(giode.ClickEvent) {
 		if onAlt != nil {
+			onAlt()
+		}
+	}).OnLongPress(func(giode.ClickEvent) {
+		if onAlt != nil {
+			giode.Haptic(giode.HapticMedium)
 			onAlt()
 		}
 	})

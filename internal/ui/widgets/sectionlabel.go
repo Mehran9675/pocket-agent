@@ -10,5 +10,5 @@ import (
 // SectionLabel is a small caps heading above grouped content.
 func SectionLabel(s string) El {
 	return giode.Box(St{Padding: giode.Inset{Left: 4, Bottom: 6, Top: 4}},
-		giode.Text(strings.ToUpper(s), St{FontSize: theme.SizeMicro, Color: theme.T.Muted, FontWeight: giode.FontWeightBold}))
+		giode.Text(strings.ToUpper(s), St{FontSize: theme.SizeMicro, Color: theme.T.Muted, FontWeight: giode.FontWeightSemiBold}))
 }

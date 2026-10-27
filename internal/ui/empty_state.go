@@ -68,7 +68,7 @@ func (v *chatView) emptyState(compact bool) widgets.El {
 	content := widgets.Col(widgets.St{Width: -1, Gap: 18, Align: giode.AlignCenter, Padding: giode.Inset{Top: 24, Bottom: 24}},
 		mark,
 		widgets.Col(widgets.St{Gap: 6, Align: giode.AlignCenter},
-			widgets.Text(title, theme.SizeDisplay, theme.T.Text, giode.FontWeightBold),
+			widgets.Text(title, theme.SizeDisplay, theme.T.Text, giode.FontWeightSemiBold),
 			giode.Text(subtitle, widgets.St{FontSize: theme.SizeBody, Color: theme.T.Muted, TextAlign: giode.TextAlignCenter}),
 		),
 		giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Top: 4}}, widgets.Centered(420,

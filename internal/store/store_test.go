@@ -1,6 +1,9 @@
 package store
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,5 +39,39 @@ func TestConversationRoundTrip(t *testing.T) {
 	}
 	if len(s2.LoadAgents()) != len(BuiltinAgents()) {
 		t.Fatal("agents")
+	}
+}
+
+type memSecrets map[string][]byte
+
+func (m memSecrets) Set(name string, v []byte) error { m[name] = v; return nil }
+func (m memSecrets) Get(name string) ([]byte, error) {
+	if v, ok := m[name]; ok {
+		return v, nil
+	}
+	return nil, os.ErrNotExist
+}
+
+func TestKeysInSecrets(t *testing.T) {
+	dir := t.TempDir()
+	sec := memSecrets{}
+	s, _ := Open(dir)
+	if !s.UseSecrets(sec) {
+		t.Fatal("probe failed")
+	}
+	st := s.LoadSettings()
+	st.Providers = append(st.Providers, &ProviderConfig{ID: "p1", APIKey: "sk-123"})
+	st.Search.APIKey = "brave"
+	s.SaveSettings(st)
+	s.Flush()
+	raw, _ := os.ReadFile(filepath.Join(dir, "settings.json"))
+	if strings.Contains(string(raw), "sk-123") || strings.Contains(string(raw), "brave") {
+		t.Fatalf("key written to file: %s", raw)
+	}
+	s2, _ := Open(dir)
+	s2.UseSecrets(sec)
+	st2 := s2.LoadSettings()
+	if st2.Providers[len(st2.Providers)-1].APIKey != "sk-123" || st2.Search.APIKey != "brave" {
+		t.Fatal("keys not restored")
 	}
 }

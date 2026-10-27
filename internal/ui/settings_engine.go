@@ -39,12 +39,12 @@ func (a *App) engineBody() widgets.El {
 	}
 	if !a.engine.Available() {
 		return widgets.Card(widgets.St{},
-			widgets.Row(widgets.St{Gap: 10}, widgets.Icon("triangle-alert", 18, theme.T.Warning), widgets.Text("On-device engine unavailable", theme.SizeCallout, theme.T.Text, giode.FontWeightBold)),
+			widgets.Row(widgets.St{Gap: 10}, widgets.Icon("triangle-alert", 18, theme.T.Warning), widgets.Text("On-device engine unavailable", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold)),
 			widgets.Text(a.engine.Problem(), theme.SizeFootnote, theme.T.Text2))
 	}
 	return widgets.Col(widgets.St{Gap: 16, Width: -1},
 		widgets.Card(widgets.St{},
-			widgets.Row(widgets.St{Gap: 10}, widgets.IconTile("cpu", "#34d399", 34), widgets.Col(widgets.St{Gap: 2}, widgets.Text("llama.cpp", theme.SizeCallout, theme.T.Text, giode.FontWeightBold), widgets.Text(status, theme.SizeFootnote, theme.T.Muted))),
+			widgets.Row(widgets.St{Gap: 10}, widgets.IconTile("cpu", "#34d399", 34), widgets.Col(widgets.St{Gap: 2}, widgets.Text("llama.cpp", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold), widgets.Text(status, theme.SizeFootnote, theme.T.Muted))),
 			widgets.When(a.engine.Loaded() != "", func() widgets.El {
 				return widgets.Button("eng/unload", "Unload model", "", widgets.BtnSecondary, unload)
 			})),
