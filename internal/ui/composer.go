@@ -6,6 +6,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"strings"
 
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/giode/components/input"
@@ -32,6 +33,8 @@ type composer struct {
 	pending   []*pendingAttachment
 	nextID    int
 	thumbs    map[string]image.Image
+	// full shows the message being written full screen.
+	full bool
 }
 
 func newComposer(a *App) *composer {
@@ -39,12 +42,62 @@ func newComposer(a *App) *composer {
 	// Grows from one to eight lines. With a hardware keyboard Enter
 	// sends and Shift+Enter starts a new line; phones send with the
 	// button.
-	c.in = giode.Input.Text("Message Pocket Agent", widgets.St{
-		Background: "transparent", BorderColor: "transparent", Padding: giode.Inset{Top: 6, Bottom: 6, Left: 4, Right: 4},
-		Color: "theme.text", FontSize: theme.SizeBody,
-	}).Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label("Message")
+	c.in = giode.Input.Text("Message Pocket Agent", inputStyles(false)).
+		Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label("Message")
 	c.in.Submit(func(string) { c.submit() })
 	return c
+}
+
+// inputStyles styles the message field, in the composer or full screen.
+func inputStyles(full bool) widgets.St {
+	st := widgets.St{
+		Background: "transparent", BorderColor: "transparent", Padding: giode.Inset{Top: 6, Bottom: 6, Left: 4, Right: 4},
+		Color: "theme.text", FontSize: theme.SizeBody,
+	}
+	if full {
+		st.Height = -1
+	}
+	return st
+}
+
+// setFull switches between the composer and the full-screen editor,
+// keeping the text.
+func (c *composer) setFull(on bool) {
+	c.full = on
+	c.in.Styles(inputStyles(on))
+	if on {
+		c.in.Lines(1, 0)
+		c.in.Focus()
+	} else {
+		c.in.Lines(1, 8)
+	}
+}
+
+// fullView is the full-screen editor for long messages.
+func (c *composer) fullView() widgets.El {
+	a := c.a
+	giode.HandleBack(func() { c.setFull(false) })
+	canSend := !c.busy() && (c.in.Text() != "" || len(c.pending) > 0)
+	send := widgets.Button("composer/full/send", "Send", "arrow-up", widgets.BtnPrimary, func() {
+		if canSend {
+			c.setFull(false)
+			c.submit()
+		}
+	})
+	if !canSend || a.isRunning(a.current) {
+		send = widgets.Button("composer/full/send", "Send", "arrow-up", widgets.BtnSecondary, nil)
+	}
+	words := len(strings.Fields(c.in.Text()))
+	return widgets.Col(widgets.St{Width: -1, Height: -1, Gap: 8, Padding: giode.Inset{Left: 12, Right: 12, Top: 8, Bottom: 12}},
+		widgets.Row(widgets.St{Width: -1, Gap: 8},
+			widgets.IconButton("composer/collapse", "minimize-2", "Collapse", 20, theme.T.Text2, func() { c.setFull(false) }),
+			giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(fmt.Sprintf("%d words", words), theme.SizeFootnote, theme.T.Muted)),
+			widgets.IconButton("composer/full/attach", "plus", "Attach", 20, theme.T.Text2, a.openAttachSheet),
+			send),
+		giode.Box(widgets.St{
+			Width: -1, FlexGrow: 1, FlexDirection: giode.FlexDirectionColumn, Padding: giode.UniformInset(10),
+			Background: theme.T.Surface, BorderRadius: 18, BorderWidth: 1, BorderColor: theme.T.BorderStrong,
+		}, c.in))
 }
 
 func (c *composer) reset() {
@@ -236,7 +289,9 @@ func (c *composer) view(compact bool) widgets.El {
 	c.in.Placeholder(placeholder)
 	boxKids = append(boxKids,
 		c.in,
-		widgets.Row(widgets.St{Width: -1, Gap: 6}, append(tools, widgets.Spacer(), action)...),
+		widgets.Row(widgets.St{Width: -1, Gap: 6}, append(tools, widgets.Spacer(),
+			widgets.IconButton("composer/expand", "maximize-2", "Full screen", 18, theme.T.Text2, func() { c.setFull(true) }),
+			action)...),
 	)
 	st := widgets.St{
 		FlexDirection: giode.FlexDirectionColumn, Width: -1, Gap: 6,

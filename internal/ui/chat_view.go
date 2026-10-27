@@ -33,6 +33,9 @@ func newChatView(a *App) *chatView {
 
 func (v *chatView) view(compact bool) widgets.El {
 	a := v.a
+	if a.composer.full {
+		return a.composer.fullView()
+	}
 	header := v.header(compact)
 	var body widgets.El
 	if a.current == nil || len(a.current.Messages) == 0 {

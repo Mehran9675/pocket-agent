@@ -63,16 +63,22 @@ type plan struct {
 	Done bool `json:"done"`
 }
 
-type depthSpec struct{ questions, rounds, pages, followups int }
+// depthSpec sizes a run: sub-questions planned, search rounds, pages
+// read per query and follow-up queries per round. Reflection may end a
+// run early only after minRounds and once targetSources pages were
+// read.
+type depthSpec struct {
+	questions, rounds, minRounds, pages, followups, targetSources int
+}
 
 func (r *Research) spec() depthSpec {
 	switch r.Depth {
 	case store.DepthQuick:
-		return depthSpec{questions: 3, rounds: 1, pages: 2, followups: 0}
+		return depthSpec{questions: 4, rounds: 1, minRounds: 1, pages: 3, followups: 0, targetSources: 8}
 	case store.DepthDeep:
-		return depthSpec{questions: 6, rounds: 3, pages: 4, followups: 4}
+		return depthSpec{questions: 8, rounds: 5, minRounds: 3, pages: 5, followups: 6, targetSources: 40}
 	}
-	return depthSpec{questions: 4, rounds: 2, pages: 3, followups: 3}
+	return depthSpec{questions: 6, rounds: 3, minRounds: 2, pages: 4, followups: 4, targetSources: 20}
 }
 
 func (r *Research) update(fn func(*store.Research)) {
@@ -183,7 +189,14 @@ Reply with JSON: {"goal": "one sentence restating what the final report must ans
 		}
 		r.update(func(s *store.Research) { s.Phase = store.PhaseReflecting })
 		next, err := r.reflect(ctx, p.Goal, sp.followups)
-		if err != nil || next.Done {
+		if err != nil {
+			break
+		}
+		// The model may call it done only once the run is deep enough.
+		r.mu.Lock()
+		read := len(r.notes)
+		r.mu.Unlock()
+		if next.Done && round >= sp.minRounds && read >= sp.targetSources {
 			break
 		}
 		pending = next.Queries
@@ -233,7 +246,7 @@ func (r *Research) setQuery(query string, fn func(q *store.ResearchQuery)) {
 // notes.
 func (r *Research) investigate(ctx context.Context, question, query string, pages int) {
 	r.setQuery(query, func(q *store.ResearchQuery) { q.Status = "searching" })
-	results, err := tools.Search(ctx, r.Search, query, 8)
+	results, err := tools.Search(ctx, r.Search, query, 10)
 	if err != nil {
 		r.setQuery(query, func(q *store.ResearchQuery) { q.Status = "failed" })
 		return
@@ -334,8 +347,9 @@ func (r *Research) reflect(ctx context.Context, goal string, n int) (plan, error
 Notes so far:
 %s
 
-What important aspects are still missing, uncertain or contradictory? Propose up to %d new web searches that would fill the gaps (don't repeat covered ground).
-Reply with JSON: {"done": true|false, "queries": [{"question": "...", "query": "..."}]} - "done": true when the notes already answer the goal well.`,
+Review these notes critically, as an expert would before publishing. What is still missing, thin, outdated, one-sided or contradictory? Think of primary sources and official data, recent developments, numbers that need confirming, expert or opposing views, and specifics (names, dates, figures) the report will need.
+Propose up to %d new web searches that would fill those gaps; don't repeat covered ground. Always propose searches unless the notes are truly comprehensive.
+Reply with JSON: {"done": true|false, "queries": [{"question": "...", "query": "..."}]} - "done": true only when the notes already answer every part of the goal in depth.`,
 			goal, r.notesText(500), n), 1200)
 	if err != nil {
 		return plan{}, err
@@ -356,13 +370,13 @@ func (r *Research) write(ctx context.Context, goal string) error {
 	for i, u := range urls {
 		fmt.Fprintf(&srcs, "[%d] %s\n", i+1, u)
 	}
-	length := "a thorough report (roughly 900-1500 words)"
-	maxTokens := 6000
+	length := "a thorough report (roughly 1500-2500 words)"
+	maxTokens := 9000
 	if r.Small {
 		length, maxTokens = "a focused report (roughly 400 words)", 1500
 	}
 	if r.Depth == store.DepthDeep && !r.Small {
-		length, maxTokens = "a comprehensive report (roughly 1500-2500 words)", 9000
+		length, maxTokens = "a comprehensive report (roughly 2500-4000 words)", 14000
 	}
 	prompt := fmt.Sprintf(`Research request: %s
 Goal: %s

@@ -28,9 +28,9 @@ func (a *App) openDepthSheet() {
 	}
 	a.openSheet("depth", "Research depth", func() widgets.El {
 		return widgets.Group(
-			depthRow(store.DepthQuick, "Quick", "3 questions · 1 round · about a minute"),
-			depthRow(store.DepthStandard, "Standard", "4 questions · 2 rounds with follow-ups"),
-			depthRow(store.DepthDeep, "Deep", "6 questions · 3 rounds · the most thorough report"),
+			depthRow(store.DepthQuick, "Quick", "4 questions · 1 round · a few minutes"),
+			depthRow(store.DepthStandard, "Standard", "6 questions · up to 3 rounds · about 20 sources"),
+			depthRow(store.DepthDeep, "Deep", "8 questions · up to 5 rounds · 40+ sources and a long report"),
 		)
 	})
 }
