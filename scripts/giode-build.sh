@@ -10,6 +10,12 @@
 #                    builds with -release when set
 #   GIO_PATCHES=false  build Android against plain Gio (60fps cap)
 #
+# Android builds use Gio with its frame pacing fixed (it otherwise caps
+# 120Hz displays at 60fps): scripts/gio-patch.py makes a patched copy
+# and go.mod points at it, with a replace, for the build. (The giode
+# CLI's own patching passes -modfile in GOFLAGS, which breaks gogio's go
+# commands that run outside the module.)
+#
 # In GitHub Actions a failed build's output is reported as an error
 # annotation, and a failed Android build is retried once against plain
 # Gio, so a release still gets an APK.
@@ -19,7 +25,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 cp giode.toml giode.toml.orig
-trap 'mv giode.toml.orig giode.toml' EXIT
+cp go.mod go.mod.orig
+cp go.sum go.sum.orig
+trap 'mv giode.toml.orig giode.toml; mv go.mod.orig go.mod; mv go.sum.orig go.sum' EXIT
 
 configure() {
 python3 - <<'PY'
@@ -54,12 +62,26 @@ if os.environ.get("PROFILE"):
     put("ios", "profile", q(os.path.abspath(os.environ["PROFILE"])))
 if os.environ.get("KEYSTORE"):
     put("android", "keystore", q(os.path.abspath(os.environ["KEYSTORE"])))
-if os.environ.get("GIO_PATCHES") == "false":
-    put("android", "gio_patches", "false")
+# The CLI's patching is replaced by scripts/gio-patch.py (see above).
+put("android", "gio_patches", "false")
 open(path, "w").write("\n".join(lines))
 PY
 }
 configure
+
+# patch_gio points go.mod at a patched copy of Gio for an Android build.
+patch_gio() {
+	local dir
+	if dir=$(python3 scripts/gio-patch.py); then
+		go mod edit -replace "gioui.org=$dir"
+		echo "Building against Gio with Android frame pacing fixed ($dir)"
+	else
+		echo "::warning title=Android frame pacing::Gio couldn't be patched; this APK is capped at 60fps"
+	fi
+}
+if [[ " $* " == *" android "* || " $* " == *" aab "* ]] && [ "${GIO_PATCHES:-}" != "false" ]; then
+	patch_gio
+fi
 
 RELEASE=()
 [ -n "${KEYSTORE:-}" ] && RELEASE=(-release)
@@ -89,6 +111,8 @@ report "giode build failed"
 if [ -n "${GITHUB_ACTIONS:-}" ] && [[ " $* " == *" android "* ]] && [ "${GIO_PATCHES:-}" != "false" ]; then
 	echo "::warning title=Android frame pacing::Retrying against plain Gio; this APK is capped at 60fps"
 	cp giode.toml.orig giode.toml
+	cp go.mod.orig go.mod
+	cp go.sum.orig go.sum
 	GIO_PATCHES=false configure
 	build "$@" && exit 0
 	report "giode build failed against plain Gio too"
