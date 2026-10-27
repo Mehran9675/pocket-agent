@@ -10,6 +10,7 @@ import (
 
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/giode/components/input"
+	"github.com/mehran9675/giode/components/scroll"
 	"github.com/mehran9675/pocket-agent/internal/docs"
 	"github.com/mehran9675/pocket-agent/internal/store"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
@@ -35,6 +36,12 @@ type composer struct {
 	thumbs    map[string]image.Image
 	// full shows the message being written full screen.
 	full bool
+	// floating is set while the composer is laid out over a
+	// conversation: the chat view positions it, so it adds no margin.
+	floating bool
+	// chips scrolls this frame's chipEls sideways.
+	chips   *scroll.Scroll
+	chipEls []widgets.El
 }
 
 func newComposer(a *App) *composer {
@@ -45,6 +52,8 @@ func newComposer(a *App) *composer {
 	c.in = giode.Input.Text("Message Pocket Agent", inputStyles(false)).
 		Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label("Message")
 	c.in.Submit(func(string) { c.submit() })
+	c.chips = giode.Scroll(func() widgets.El { return widgets.Row(widgets.St{Gap: 6}, c.chipEls...) },
+		widgets.St{ScrollBar: giode.ScrollBar{Hidden: true}}).Axis(giode.Horizontal)
 	return c
 }
 
@@ -234,10 +243,9 @@ func (c *composer) view(compact bool) widgets.El {
 			modeLabel, modeIcon = ag.Name, ag.Icon
 		}
 	case store.ModeResearch:
-		modeLabel, modeIcon = "Deep research", "telescope"
+		modeLabel, modeIcon = ifStr(compact, "Research", "Deep research"), "telescope"
 	}
 	tools := []widgets.El{
-		widgets.IconButton("composer/attach", "plus", "Attach", 20, theme.T.Text2, a.openAttachSheet),
 		widgets.Chip("composer/mode", modeLabel, modeIcon, mode != store.ModeChat, a.openModeSheet),
 	}
 	if mode == store.ModeChat {
@@ -287,11 +295,17 @@ func (c *composer) view(compact bool) widgets.El {
 		boxKids = append(boxKids, giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap, Padding: giode.Inset{Bottom: 4}}, atts...))
 	}
 	c.in.Placeholder(placeholder)
+	c.chipEls = tools
 	boxKids = append(boxKids,
-		c.in,
-		widgets.Row(widgets.St{Width: -1, Gap: 6}, append(tools, widgets.Spacer(),
-			widgets.IconButton("composer/expand", "maximize-2", "Full screen", 18, theme.T.Text2, func() { c.setFull(true) }),
-			action)...),
+		widgets.Row(widgets.St{Width: -1, Gap: 4, Align: giode.AlignStart},
+			giode.Box(widgets.St{FlexGrow: 1}, c.in),
+			widgets.IconButton("composer/expand", "maximize-2", "Full screen", 16, theme.T.Muted, func() { c.setFull(true) })),
+		// The chips scroll sideways when they don't fit, so the send
+		// button always stays in view.
+		widgets.Row(widgets.St{Width: -1, Gap: 6},
+			widgets.IconButton("composer/attach", "plus", "Attach", 20, theme.T.Text2, a.openAttachSheet),
+			giode.Box(widgets.St{FlexGrow: 1}, c.chips),
+			action),
 	)
 	st := widgets.St{
 		FlexDirection: giode.FlexDirectionColumn, Width: -1, Gap: 6,
@@ -306,9 +320,19 @@ func (c *composer) view(compact bool) widgets.El {
 	if a.loadingLLM != "" {
 		hint = "Loading the on-device model…"
 	}
-	return giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Left: 12, Right: 12, Bottom: 8}},
+	// Floating over a conversation there's no room for the hint under
+	// the box; it shows on a new chat.
+	var hintEl widgets.El = giode.Box(widgets.St{})
+	if conv == nil || len(conv.Messages) == 0 || a.loadingLLM != "" {
+		hintEl = widgets.Text(hint, theme.SizeMicro, theme.T.Faint)
+	}
+	pad := giode.Inset{Left: 12, Right: 12, Bottom: 8}
+	if c.floating {
+		pad.Bottom = 0
+	}
+	return giode.Box(widgets.St{Width: -1, Padding: pad},
 		widgets.Centered(780, widgets.Col(widgets.St{Width: -1, Gap: 6, Align: giode.AlignCenter},
 			box,
-			widgets.Text(hint, theme.SizeMicro, theme.T.Faint),
+			hintEl,
 		)))
 }
