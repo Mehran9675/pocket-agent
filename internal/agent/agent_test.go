@@ -110,11 +110,11 @@ func TestAssistantMessagesSequence(t *testing.T) {
 	}
 }
 
-// looping calls the calculator forever, using 1000 tokens a call.
-type looping struct{ calls int }
+// budgetProbe calls the calculator forever, using 1000 tokens a call.
+type budgetProbe struct{ calls int }
 
-func (*looping) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
-func (l *looping) Chat(context.Context, llm.Request, func(llm.Event)) (*llm.Response, error) {
+func (*budgetProbe) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
+func (l *budgetProbe) Chat(context.Context, llm.Request, func(llm.Event)) (*llm.Response, error) {
 	l.calls++
 	return &llm.Response{
 		ToolCalls:  []llm.ToolCall{{ID: fmt.Sprint("c", l.calls), Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}},
@@ -124,7 +124,7 @@ func (l *looping) Chat(context.Context, llm.Request, func(llm.Event)) (*llm.Resp
 
 func TestRunStopsAtTokenBudget(t *testing.T) {
 	calc, _ := tools.Builtin("calculator")
-	p := &looping{}
+	p := &budgetProbe{}
 	r := &Run{Provider: p, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: 50, TokenBudget: 3500,
 		Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("go")}}}}
 	out, err := r.Execute(context.Background())
@@ -152,5 +152,35 @@ func TestCompactToolResults(t *testing.T) {
 	}
 	if msgs[0].Text() != big {
 		t.Fatal("input modified")
+	}
+}
+
+// wrapProbe calls a tool every step and records whether it was asked to wrap up.
+type wrapProbe struct{ notes []bool }
+
+func (s *wrapProbe) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
+
+func (s *wrapProbe) Chat(_ context.Context, req llm.Request, _ func(llm.Event)) (*llm.Response, error) {
+	last := req.Messages[len(req.Messages)-1]
+	s.notes = append(s.notes, strings.Contains(last.Text(), "Write your final answer now"))
+	return &llm.Response{ToolCalls: []llm.ToolCall{{ID: fmt.Sprint("c", len(s.notes)), Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}},
+		StopReason: "tool_calls", Usage: llm.Usage{InputTokens: 100}}, nil
+}
+
+func TestRunAsksForAnswerBeforeLimits(t *testing.T) {
+	calc, _ := tools.Builtin("calculator")
+	run := func(steps, budget int) []bool {
+		p := &wrapProbe{}
+		r := &Run{Provider: p, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: steps, TokenBudget: budget,
+			Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("go")}}}}
+		r.Execute(context.Background())
+		return p.notes
+	}
+	if got := fmt.Sprint(run(5, 0)); got != "[false false false true true]" {
+		t.Fatalf("steps: %s", got)
+	}
+	// 1000 tokens at 100 a step: from 750 used it asks.
+	if got := fmt.Sprint(run(20, 1000)); got != "[false false false false false false false false true true]" {
+		t.Fatalf("budget: %s", got)
 	}
 }

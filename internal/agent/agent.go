@@ -76,7 +76,7 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 	if r.Tools != nil {
 		specs = r.Tools.Specs()
 	}
-	used := 0
+	used, last := 0, 0
 	for step := 0; step < maxSteps; step++ {
 		// Checked between steps, when every tool call has its result,
 		// so the conversation can be continued later.
@@ -93,6 +93,9 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			Thinking:  r.Thinking,
 			MaxTokens: r.MaxTokens,
 		}
+		if r.wrappingUp(step, maxSteps, used, last) {
+			req.Messages = withWrapUpNote(req.Messages)
+		}
 		resp, err := chat(ctx, r.Provider, req, func(ev llm.Event) {
 			switch ev.Kind {
 			case llm.EventText:
@@ -105,7 +108,8 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			return msgs[start:], err
 		}
 		r.Observer.Usage(resp.Usage)
-		used += resp.Usage.InputTokens + resp.Usage.OutputTokens
+		last = resp.Usage.InputTokens + resp.Usage.OutputTokens
+		used += last
 		assistant := llm.Message{Role: llm.RoleAssistant, ToolCalls: resp.ToolCalls, Native: resp.Native}
 		if resp.Text != "" {
 			assistant.Parts = []llm.Part{llm.TextPart(resp.Text)}
@@ -142,6 +146,36 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 		}
 	}
 	return msgs[start:], ErrMaxSteps
+}
+
+// wrappingUp reports whether this step should be the run's last: the
+// final two steps, or when the budget can't cover two more steps like
+// the previous one. Asking for the answer then beats being cut off.
+func (r *Run) wrappingUp(step, maxSteps, used, last int) bool {
+	if step >= maxSteps-2 {
+		return true
+	}
+	return r.TokenBudget > 0 && (used+2*last >= r.TokenBudget || used >= r.TokenBudget*3/4)
+}
+
+// wrapUpNote is appended to the latest tool result when the run nears
+// its limits.
+const wrapUpNote = "\n\n[Pocket Agent: this task has almost used its step and token budget. Don't call more tools. " +
+	"Write your final answer now from what you have, and say briefly what is left undone, if anything.]"
+
+// withWrapUpNote returns msgs with wrapUpNote added to the last tool
+// result, which keeps the turn order every provider accepts. A run that
+// hasn't called a tool yet needs no note.
+func withWrapUpNote(msgs []llm.Message) []llm.Message {
+	n := len(msgs)
+	if n == 0 || msgs[n-1].Role != llm.RoleTool {
+		return msgs
+	}
+	out := append([]llm.Message(nil), msgs...)
+	m := out[n-1]
+	m.Parts = []llm.Part{llm.TextPart(m.Text() + wrapUpNote)}
+	out[n-1] = m
+	return out
 }
 
 func (r *Run) runTool(ctx context.Context, call llm.ToolCall) (tools.Result, bool) {

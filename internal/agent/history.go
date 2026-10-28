@@ -148,6 +148,10 @@ type SystemPromptInput struct {
 	HasTools     bool
 	Local        bool
 	Workspace    []string // existing workspace files
+	// MaxSteps and TokenBudget are the run's limits, stated so the
+	// model can pace itself; 0 leaves them out.
+	MaxSteps    int
+	TokenBudget int
 }
 
 // SystemPrompt composes the system prompt for a turn.
@@ -172,6 +176,16 @@ func SystemPrompt(in SystemPromptInput) string {
 			"without asking for confirmation at each step. Files you write go to a private workspace the user can open and share.")
 		if len(in.Workspace) > 0 {
 			b.WriteString(" Current workspace files: " + strings.Join(in.Workspace, ", ") + ".")
+		}
+		b.WriteString("\n\nWork efficiently: do only what the task needs, scale the effort to how big the request is, " +
+			"don't repeat a search or fetch you already made, and give the answer as soon as you have enough to do it well. " +
+			"A simple question needs a few tool calls at most.")
+		if in.MaxSteps > 0 {
+			fmt.Fprintf(&b, " You have at most %d steps", in.MaxSteps)
+			if in.TokenBudget > 0 {
+				fmt.Fprintf(&b, " and about %dk tokens (each step resends the conversation)", in.TokenBudget/1000)
+			}
+			b.WriteString("; plan to finish well within them.")
 		}
 	}
 	if in.Instructions != "" {

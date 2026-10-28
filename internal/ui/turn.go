@@ -140,6 +140,10 @@ func (a *App) startTurn(c *store.Conversation) {
 		if a.settings.MemoryEnabled {
 			memory = a.st.All()
 		}
+		maxSteps := 10
+		if ag != nil {
+			maxSteps = ag.MaxSteps
+		}
 		system := agent.SystemPrompt(agent.SystemPromptInput{
 			Instructions: a.settings.Instructions,
 			Override:     c.System,
@@ -150,11 +154,9 @@ func (a *App) startTurn(c *store.Conversation) {
 			HasTools:     set.Len() > 0,
 			Local:        ref.Provider == store.LocalProviderID,
 			Workspace:    a.workspaceFiles(c),
+			MaxSteps:     maxSteps,
+			TokenBudget:  ag.Budget(),
 		})
-		maxSteps := 10
-		if ag != nil {
-			maxSteps = ag.MaxSteps
-		}
 		if !info.Tools {
 			set = tools.NewSet()
 		}
