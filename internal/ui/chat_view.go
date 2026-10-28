@@ -60,7 +60,7 @@ func (v *chatView) view(compact bool) widgets.El {
 		header,
 		giode.Box(widgets.St{FlexGrow: 1, Width: -1},
 			giode.Box(widgets.St{Position: giode.PositionAbsolute, Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn}, v.listView()),
-			giode.Box(widgets.St{Position: giode.PositionAbsolute, Width: -1, Bottom: composerGap}, composer)),
+			giode.Box(widgets.St{Position: giode.PositionAbsolute, Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn, Justify: giode.JustifyEnd}, composer)),
 	)
 }
 
@@ -106,8 +106,5 @@ func (v *chatView) bottomPad(last bool) int {
 	if !last {
 		return 0
 	}
-	return int(v.composerH) + composerGap + 16
+	return int(v.composerH) + 8
 }
-
-// composerGap is the space under the floating composer, in dp.
-const composerGap = 8

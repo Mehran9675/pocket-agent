@@ -11,6 +11,7 @@ import (
 	"github.com/mehran9675/giode"
 	"github.com/mehran9675/giode/components/input"
 	"github.com/mehran9675/giode/components/scroll"
+	pr "github.com/mehran9675/giode/styles/properties"
 	"github.com/mehran9675/pocket-agent/internal/docs"
 	"github.com/mehran9675/pocket-agent/internal/store"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
@@ -307,14 +308,20 @@ func (c *composer) view(compact bool) widgets.El {
 			giode.Box(widgets.St{FlexGrow: 1}, c.chips),
 			action),
 	)
+	radius := pr.BorderRadius(24)
+	if compact {
+		radius = 18 // phones: wide and squarer, so text meets a straight edge
+	}
 	st := widgets.St{
 		FlexDirection: giode.FlexDirectionColumn, Width: -1, Gap: 6,
-		Background: theme.T.Surface, BorderRadius: 24, BorderWidth: 1, BorderColor: theme.T.BorderStrong,
+		Background: theme.T.Surface, BorderRadius: radius, BorderWidth: 1, BorderColor: theme.T.BorderStrong,
 		Padding: giode.Inset{Top: 10, Left: 12, Right: 10, Bottom: 10},
 	}
-	// Giode draws blurred shadows from one cached nine-slice image, so a
-	// soft shadow costs little.
-	st.BoxShadow = giode.BoxShadow{Y: 6, Blur: 24, Color: theme.T.Shadow}
+	// A shadow would darken the text around the box in dark mode; the
+	// border separates it there.
+	if !theme.T.Dark {
+		st.BoxShadow = giode.BoxShadow{Y: 4, Blur: 16, Color: theme.T.Shadow}
+	}
 	box := giode.Box(st, boxKids...)
 	hint := "Pocket Agent can make mistakes. Check important info."
 	if a.loadingLLM != "" {
@@ -326,13 +333,21 @@ func (c *composer) view(compact bool) widgets.El {
 	if conv == nil || len(conv.Messages) == 0 || a.loadingLLM != "" {
 		hintEl = widgets.Text(hint, theme.SizeMicro, theme.T.Faint)
 	}
-	pad := giode.Inset{Left: 12, Right: 12, Bottom: 8}
-	if c.floating {
-		pad.Bottom = 0
+	side := 12
+	if compact {
+		side = 6
 	}
-	return giode.Box(widgets.St{Width: -1, Padding: pad},
+	body := giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Left: side, Right: side, Bottom: 8}},
 		widgets.Centered(780, widgets.Col(widgets.St{Width: -1, Gap: 6, Align: giode.AlignCenter},
 			box,
 			hintEl,
 		)))
+	if !c.floating {
+		return body
+	}
+	// Over a conversation: the messages fade out above the composer
+	// instead of being cut off at its edge.
+	return widgets.Col(widgets.St{Width: -1},
+		giode.Box(widgets.St{Width: -1, Height: 28, BackgroundGradient: giode.Linear(180, theme.T.Bg+"00", theme.T.Bg)}),
+		giode.Box(widgets.St{Width: -1, Background: theme.T.Bg}, body))
 }
