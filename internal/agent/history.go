@@ -152,6 +152,8 @@ type SystemPromptInput struct {
 	// model can pace itself; 0 leaves them out.
 	MaxSteps    int
 	TokenBudget int
+	// Skills are the enabled skills, each a name and when to use it.
+	Skills [][2]string
 }
 
 // SystemPrompt composes the system prompt for a turn.
@@ -186,6 +188,13 @@ func SystemPrompt(in SystemPromptInput) string {
 				fmt.Fprintf(&b, " and about %dk tokens (each step resends the conversation)", in.TokenBudget/1000)
 			}
 			b.WriteString("; plan to finish well within them.")
+		}
+	}
+	if len(in.Skills) > 0 {
+		b.WriteString("\n\n# Skills\nThe user installed these skills. When a task matches one, call use_skill with its name " +
+			"before starting and follow its instructions; read_skill_file opens files it refers to.\n")
+		for _, s := range in.Skills {
+			b.WriteString("- " + s[0] + ": " + s[1] + "\n")
 		}
 	}
 	if in.Instructions != "" {

@@ -53,6 +53,7 @@ func (a *App) settingsHome() widgets.El {
 			widgets.ListRow("s/search", "globe", "#38bdf8", "Web search", engines[a.settings.Search.Engine], nil, func() { a.navigate("settings/search") }),
 			widgets.ListRow("s/tools", "wrench", "#a78bfa", "Tools & permissions", fmt.Sprintf("%d tools in chat", len(a.settings.ChatTools)), nil, func() { a.navigate("settings/tools") }),
 			widgets.ListRow("s/mcp", "plug", "#f472b6", "MCP servers", fmt.Sprintf("%d configured", mcpCount), nil, func() { a.navigate("settings/mcp") }),
+			widgets.ListRow("s/skills", "book-open", "#a78bfa", "Skills", skillsSummary(a), nil, func() { a.navigate("settings/skills") }),
 			widgets.ListRow("s/agents", "bot", "#7c83ff", "Agents", fmt.Sprintf("%d agents", len(a.agents)), nil, func() { a.navigate("agents") }),
 		)),
 		widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel("Personalization"), widgets.Group(
@@ -97,6 +98,14 @@ func (a *App) settingsHome() widgets.El {
 			widgets.ListRow("s/about", "info", theme.T.Muted, "About", "Version "+Version, nil, func() { a.navigate("settings/about") }),
 		)),
 	)
+}
+
+func skillsSummary(a *App) string {
+	n, on := len(a.skills.List()), len(a.enabledSkills())
+	if n == 0 {
+		return "None installed"
+	}
+	return fmt.Sprintf("%d of %d on", on, n)
 }
 
 func fontScaleIdx(f float64) int {

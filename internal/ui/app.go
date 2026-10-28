@@ -20,6 +20,7 @@ import (
 	"github.com/mehran9675/giode/components/scroll"
 	"github.com/mehran9675/giode/components/sheet"
 	"github.com/mehran9675/pocket-agent/internal/local"
+	"github.com/mehran9675/pocket-agent/internal/skills"
 	"github.com/mehran9675/pocket-agent/internal/store"
 	"github.com/mehran9675/pocket-agent/internal/tools"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
@@ -59,6 +60,8 @@ type App struct {
 	mcp       map[string]*tools.MCPClient
 	mcpTools  map[string][]*tools.Tool
 	mcpStatus map[string]string
+
+	skills *skills.Library
 
 	// navigation: "" is the chat; other routes are pages.
 	route   string
@@ -129,6 +132,7 @@ func New(win *giode.App, st *store.Store) *App {
 	}
 	a.draft = draft{mode: store.ModeChat, depth: store.DepthStandard, model: a.settings.DefaultModel}
 	a.models = local.NewStore(st.ModelsDir())
+	a.skills = skills.Open(filepath.Join(st.Dir(), "skills"))
 	a.models.OnChange = func() { win.Post(func() {}) }
 	a.runtime = local.NewRuntime(filepath.Join(st.Dir(), "engine"), os.Getenv("POCKET_AGENT_ENGINE_MANIFEST"))
 	a.runtime.OnChange = func() { win.Post(func() {}) }

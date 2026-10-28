@@ -184,3 +184,13 @@ func TestRunAsksForAnswerBeforeLimits(t *testing.T) {
 		t.Fatalf("budget: %s", got)
 	}
 }
+
+func TestSystemPromptListsSkillsAndLimits(t *testing.T) {
+	p := SystemPrompt(SystemPromptInput{Mode: store.ModeAgent, MaxSteps: 30, TokenBudget: 500000,
+		Skills: [][2]string{{"pdf", "Use for PDFs."}}})
+	for _, want := range []string{"- pdf: Use for PDFs.", "call use_skill", "at most 30 steps", "about 500k tokens"} {
+		if !strings.Contains(p, want) {
+			t.Errorf("prompt lacks %q:\n%s", want, p)
+		}
+	}
+}

@@ -129,6 +129,7 @@ func (a *App) startTurn(c *store.Conversation) {
 			OnPlan: func(items []tools.PlanItem) {
 				obs.plan(items)
 			},
+			Skills: skillServer{a.skills, a.enabledSkills()},
 		}
 		if a.settings.MemoryEnabled {
 			env.Memory = a.st
@@ -156,6 +157,7 @@ func (a *App) startTurn(c *store.Conversation) {
 			Workspace:    a.workspaceFiles(c),
 			MaxSteps:     maxSteps,
 			TokenBudget:  ag.Budget(),
+			Skills:       a.skillIndex(set, info.Tools),
 		})
 		if !info.Tools {
 			set = tools.NewSet()

@@ -56,6 +56,16 @@ type Env struct {
 	Memory Memory
 	// OnPlan receives plan updates.
 	OnPlan func([]PlanItem)
+	// Skills serves the enabled skills.
+	Skills Skills
+}
+
+// Skills gives models the skills the user installed.
+type Skills interface {
+	// Load returns a skill's instructions and lists its files.
+	Load(name string) (string, error)
+	// File returns one of a skill's files.
+	File(name, path string) (string, error)
 }
 
 // Attachment is a readable document attached to the conversation.

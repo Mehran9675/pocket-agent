@@ -53,5 +53,10 @@ func (a *App) toolSet(c *store.Conversation, ag *store.Agent) *tools.Set {
 			}
 		}
 	}
+	if len(a.enabledSkills()) > 0 {
+		for _, t := range tools.SkillTools() {
+			set.Add(t)
+		}
+	}
 	return set
 }

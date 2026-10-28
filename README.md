@@ -52,6 +52,9 @@ dozens of sources and writes a cited report. Written in Go with
   sandbox, reading long attachments, long-term memory. Per-tool permissions with inline
   *Allow once / Always allow / Deny* approval.
 - **MCP servers** (Streamable HTTP) add remote tools to chats and agents.
+- **Skills**: install SKILL.md skills from a file, a .zip or a link (GitHub folders included), or
+  write your own, and turn them on or off in Settings. Models see each skill's description and
+  load its instructions and files when a task calls for them.
 - A full-screen editor for long messages; folders for conversations (one level).
 - Regenerate, edit and resend, copy, share, export to Markdown, rename, pin, search, per-chat
   system prompt, automatic titles, token, tokens-per-second and time stats.
@@ -117,6 +120,7 @@ engine/                 the on-device engine: a C interface over llama.cpp, buil
 internal/local          engine loader and updater, model catalog, downloader
 internal/agent          tool loop, history building, system prompt, deep research pipeline
 internal/tools          built-in tools, web search engines, JavaScript sandbox, MCP client
+internal/skills         installed skills: SKILL.md parsing, zip and link installs
 internal/docs           attachment extraction (PDF, Office, HTML, images)
 internal/store          data model and JSON persistence
 internal/ui             screens - one view per file

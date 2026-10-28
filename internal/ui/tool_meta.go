@@ -56,6 +56,10 @@ func (a *App) toolMeta(t *store.ToolRun) (icon, title string) {
 		return "brain", verb("Saving to memory", "Saved to memory")
 	case "forget":
 		return "brain", verb("Forgetting", "Removed from memory")
+	case "use_skill":
+		return "book-open", verb("Loading", "Loaded") + " the " + s("name") + " skill"
+	case "read_skill_file":
+		return "book-open", verb("Reading", "Read") + " " + s("name") + "/" + s("path")
 	}
 	title = t.Name
 	for _, ts := range a.mcpTools {

@@ -374,6 +374,8 @@ type Settings struct {
 	Thinking   llm.Thinking      `json:"thinking,omitempty"`
 	Local      LocalSettings     `json:"local"`
 	MCPServers []tools.MCPServer `json:"mcpServers"`
+	// DisabledSkills names installed skills turned off; new ones start on.
+	DisabledSkills []string `json:"disabledSkills,omitempty"`
 	// Onboarded is set once the welcome flow finished.
 	Onboarded bool    `json:"onboarded"`
 	FontScale float64 `json:"fontScale,omitempty"`
