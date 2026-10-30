@@ -14,7 +14,7 @@ func (a *App) userMessage(c *store.Conversation, m *store.Message) widgets.El {
 		// The instruction is for the model; the user sees their choice.
 		return giode.Box(widgets.St{Width: -1, Justify: giode.JustifyEnd},
 			widgets.Row(widgets.St{Gap: 6, Padding: giode.SymmetricInset(12, 6), BorderRadius: 14, Background: theme.T.UserBubble},
-				widgets.Icon("check", 14, theme.T.Muted), widgets.Text("Wrap up and show the results", theme.SizeFootnote, theme.T.Muted)))
+				widgets.Icon("check", 14, theme.T.Muted), widgets.Text(tr("Wrap up and show the results"), theme.SizeFootnote, theme.T.Muted)))
 	}
 	var kids []widgets.El
 	if len(m.Attachments) > 0 {
@@ -32,9 +32,9 @@ func (a *App) userMessage(c *store.Conversation, m *store.Message) widgets.El {
 	}
 	running := a.isRunning(c)
 	actions := widgets.Row(widgets.St{Gap: 0},
-		widgets.IconButton("u/copy/"+m.ID, "copy", "Copy", 15, theme.T.Faint, func() { a.copyText(m.Text) }),
+		widgets.IconButton("u/copy/"+m.ID, "copy", tr("Copy"), 15, theme.T.Faint, func() { a.copyText(m.Text) }),
 		widgets.When(!running, func() widgets.El {
-			return widgets.IconButton("u/edit/"+m.ID, "pencil", "Edit", 15, theme.T.Faint, func() { a.editMessage(c, m) })
+			return widgets.IconButton("u/edit/"+m.ID, "pencil", tr("Edit"), 15, theme.T.Faint, func() { a.editMessage(c, m) })
 		}),
 	)
 	kids = append(kids, actions)

@@ -11,22 +11,22 @@ func (a *App) aboutBody() widgets.El {
 		widgets.Gap(0, 8),
 		widgets.LogoMark(64),
 		widgets.Text("Pocket Agent", theme.SizeDisplay, theme.T.Text, giode.FontWeightSemiBold),
-		widgets.Text("Version "+Version, theme.SizeFootnote, theme.T.Muted),
-		giode.Text("Private AI chat, research and agents for iPhone, iPad and Android - on-device or with the cloud models you choose.", widgets.St{FontSize: theme.SizeCallout, Color: theme.T.Text2, TextAlign: giode.TextAlignCenter}),
+		widgets.Text(tr("Version {version}", "version", Version), theme.SizeFootnote, theme.T.Muted),
+		giode.Text(tr("Private AI chat, research and agents for iPhone, iPad and Android - on-device or with the cloud models you choose."), widgets.St{FontSize: theme.SizeCallout, Color: theme.T.Text2, TextAlign: giode.TextAlignCenter}),
 		widgets.Group(
-			widgets.ListRow("about/giode", "layers", theme.T.Primary, "Built with Giode", "Native Go UI on Gio", nil, func() { a.openLink("https://github.com/mehran9675/giode") }),
-			widgets.ListRow("about/llama", "cpu", "#34d399", "llama.cpp", "On-device inference (MIT)", nil, func() { a.openLink("https://github.com/ggml-org/llama.cpp") }),
-			widgets.ListRow("about/fonts", "pen-line", theme.T.Muted, "Inter & JetBrains Mono", "SIL Open Font License", nil, nil),
-			widgets.ListRow("about/icons", "star", theme.T.Muted, "Lucide icons", "ISC License", nil, nil),
+			widgets.ListRow("about/giode", "layers", theme.T.Primary, tr("Built with Giode"), tr("Native Go UI on Gio"), nil, func() { a.openLink("https://github.com/mehran9675/giode") }),
+			widgets.ListRow("about/llama", "cpu", "#34d399", "llama.cpp", tr("On-device inference (MIT)"), nil, func() { a.openLink("https://github.com/ggml-org/llama.cpp") }),
+			widgets.ListRow("about/fonts", "pen-line", theme.T.Muted, "Inter & JetBrains Mono", tr("SIL Open Font License"), nil, nil),
+			widgets.ListRow("about/icons", "star", theme.T.Muted, "Lucide icons", tr("ISC License"), nil, nil),
 		),
 		widgets.Group(
-			widgets.ListRow("about/frames", "gauge", theme.T.Muted, "Show frame times", "Build and render time and frame rate in the corner, from the next launch",
+			widgets.ListRow("about/frames", "gauge", theme.T.Muted, tr("Show frame times"), tr("Build and render time and frame rate in the corner, from the next launch"),
 				widgets.Toggle("about/frames/t", a.settings.FrameTimes, func(v bool) {
 					a.settings.FrameTimes = v
 					a.saveSettings()
-					a.toast(giode.ToastInfo, "Restart Pocket Agent to "+ifStr(v, "show", "hide")+" frame times")
+					a.toast(giode.ToastInfo, ifStr(v, tr("Restart Pocket Agent to show frame times"), tr("Restart Pocket Agent to hide frame times")))
 				}), nil),
 		),
-		widgets.Text("Your conversations, keys and files stay on this device. Messages go only to the model provider you choose.", theme.SizeCaption, theme.T.Muted),
+		widgets.Text(tr("Your conversations, keys and files stay on this device. Messages go only to the model provider you choose."), theme.SizeCaption, theme.T.Muted),
 	)
 }

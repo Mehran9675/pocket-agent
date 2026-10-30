@@ -37,7 +37,7 @@ func (s *sidebarView) convRow(c *store.Conversation) widgets.El {
 		case running:
 			trail = giode.Spinner(widgets.St{Width: 14, Height: 14, Color: theme.T.Primary})
 		case active || st.Hovered:
-			trail = widgets.IconButton("side/conv/more/"+c.ID, "ellipsis", "Options", 16, theme.T.Muted, func() { a.openConversationMenu(c) })
+			trail = widgets.IconButton("side/conv/more/"+c.ID, "ellipsis", tr("Options"), 16, theme.T.Muted, func() { a.openConversationMenu(c) })
 		case c.Pinned:
 			trail = widgets.Icon("pin", 13, theme.T.Faint)
 		default:
@@ -65,16 +65,16 @@ func (s *sidebarView) swipeRow(c *store.Conversation, row widgets.El) widgets.El
 	sw := giode.Keyed("swipe", "conv/"+c.ID, func() *swipeable.Swipeable {
 		return giode.Swipeable(func() widgets.El { return s.current[c.ID] }, nil, nil)
 	})
-	pin := "Pin"
+	pin := tr("Pin")
 	if c.Pinned {
-		pin = "Unpin"
+		pin = tr("Unpin")
 	}
 	// Refreshed every frame so labels and colors follow the pin state
 	// and the theme.
 	sw.SetActions(
 		[]giode.SwipeAction{{Label: pin, Icon: widgets.Icon("pin", 18, "#ffffff"), Background: theme.T.Primary, Color: "#ffffff", OnTap: func() { a.togglePin(c) }}},
-		[]giode.SwipeAction{{Label: "Delete", Icon: widgets.Icon("trash-2", 18, "#ffffff"), Background: theme.T.Danger, Color: "#ffffff", OnTap: func() {
-			a.ask("Delete conversation?", "“"+c.Title+"” and its files will be removed from this device.", "Delete", true, func() {
+		[]giode.SwipeAction{{Label: tr("Delete"), Icon: widgets.Icon("trash-2", 18, "#ffffff"), Background: theme.T.Danger, Color: "#ffffff", OnTap: func() {
+			a.ask(tr("Delete conversation?"), tr("“{title}” and its files will be removed from this device.", "title", c.Title), tr("Delete"), true, func() {
 				a.deleteConversation(c)
 			})
 		}}})

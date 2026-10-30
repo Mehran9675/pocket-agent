@@ -59,7 +59,7 @@ func (a *App) pickFiles() {
 			return
 		}
 		if err != nil {
-			a.toast(giode.ToastError, "Couldn't open the picker: "+err.Error())
+			a.toast(giode.ToastError, tr("Couldn't open the picker: {error}", "error", err))
 			return
 		}
 		for _, f := range files {
@@ -76,7 +76,7 @@ func (a *App) pickPhoto(source giode.PhotoSource) {
 			return
 		}
 		if err != nil {
-			a.toast(giode.ToastError, "Couldn't get the photo: "+err.Error())
+			a.toast(giode.ToastError, tr("Couldn't get the photo: {error}", "error", err))
 			return
 		}
 		a.attachPicked(f)
@@ -87,7 +87,7 @@ func (a *App) pickPhoto(source giode.PhotoSource) {
 func (a *App) attachPicked(f giode.PickedFile) {
 	name := f.Name
 	if name == "" {
-		name = "Attachment"
+		name = tr("Attachment")
 	}
 	a.Post(func() {
 		pending := a.composer.addPending(name)

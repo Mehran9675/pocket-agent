@@ -23,7 +23,7 @@ func (a *App) send(text string, atts []store.Attachment) {
 	ref := a.currentModel()
 	if ref.IsZero() {
 		a.openModelSheet()
-		a.toast(giode.ToastInfo, "Choose a model to start")
+		a.toast(giode.ToastInfo, tr("Choose a model to start"))
 		return
 	}
 	c := a.current
@@ -89,7 +89,7 @@ func (a *App) startTurn(c *store.Conversation) {
 	c.Touch()
 	if err != nil {
 		msg.Streaming = false
-		msg.Error = agent.FriendlyError(err)
+		msg.Error = tr(agent.FriendlyError(err))
 		a.st.SaveConversation(c)
 		return
 	}
@@ -230,13 +230,13 @@ func (a *App) finishTurn(c *store.Conversation, msg *store.Message, rs *runState
 	case errors.Is(err, context.Canceled):
 		msg.Stopped = true
 	case errors.Is(err, agent.ErrMaxSteps):
-		msg.Error = "The agent paused after reaching its step limit. Continue to let it keep working, or wrap up to get its results now."
+		msg.Error = tr("The agent paused after reaching its step limit. Continue to let it keep working, or wrap up to get its results now.")
 		msg.Paused = true
 	case errors.Is(err, agent.ErrTokenBudget):
-		msg.Error = fmt.Sprintf("The agent paused after using %s tokens, its budget for one task. Continue to give it another budget, or wrap up to get its results now.", compactNum(msg.Usage.InputTokens+msg.Usage.OutputTokens))
+		msg.Error = fmt.Sprintf(tr("The agent paused after using %s tokens, its budget for one task. Continue to give it another budget, or wrap up to get its results now."), compactNum(msg.Usage.InputTokens+msg.Usage.OutputTokens))
 		msg.Paused = true
 	default:
-		msg.Error = agent.FriendlyError(err)
+		msg.Error = tr(agent.FriendlyError(err))
 	}
 	msg.Version++
 	c.Touch()

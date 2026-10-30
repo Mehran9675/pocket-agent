@@ -38,18 +38,18 @@ func (a *App) sourcesRow(id string, srcs []tools.Source) widgets.El {
 				Background: widgets.HoverBg(st, theme.T.Surface), BorderWidth: 1, BorderColor: theme.T.Border},
 				giode.Box(widgets.St{Width: 20, Height: 20, BorderRadius: 6, Background: theme.T.Surface2, Align: giode.AlignCenter, Justify: giode.JustifyCenter},
 					widgets.Text(letter, theme.SizeMicro, theme.T.Text2, giode.FontWeightSemiBold)),
-				widgets.Col(widgets.St{Gap: 0}, widgets.Line(fmt.Sprintf("%d. %s", i+1, title), theme.SizeCaption, theme.T.Text2, giode.FontWeightMedium), widgets.Line(host, theme.SizeMicro, theme.T.Faint)))
+				widgets.Col(widgets.St{Gap: 0}, widgets.Line(fmt.Sprintf(tr("%d. %s"), i+1, title), theme.SizeCaption, theme.T.Text2, giode.FontWeightMedium), widgets.Line(host, theme.SizeMicro, theme.T.Faint)))
 		}, func() { a.openLink(s.URL) }))
 	}
 	if len(srcs) > 6 {
-		label := fmt.Sprintf("+%d more", len(srcs)-6)
+		label := trn("+{n} more", len(srcs)-6)
 		if open {
-			label = "Show less"
+			label = tr("Show less")
 		}
 		chips = append(chips, widgets.Chip(key+"/more", label, "", false, func() { a.expanded[key] = !open }))
 	}
 	return widgets.Col(widgets.St{Gap: 8, Width: -1},
-		widgets.Row(widgets.St{Gap: 6}, widgets.Icon("book-open", 14, theme.T.Muted), widgets.Text(fmt.Sprintf("%d sources", len(srcs)), theme.SizeFootnote, theme.T.Muted, giode.FontWeightMedium)),
+		widgets.Row(widgets.St{Gap: 6}, widgets.Icon("book-open", 14, theme.T.Muted), widgets.Text(trn("{n} sources", len(srcs)), theme.SizeFootnote, theme.T.Muted, giode.FontWeightMedium)),
 		giode.Row(widgets.St{Gap: 6, Wrap: giode.WrapWrap, Width: -1}, chips...),
 	)
 }

@@ -50,8 +50,8 @@ func newComposer(a *App) *composer {
 	// Grows from one to eight lines. With a hardware keyboard Enter
 	// sends and Shift+Enter starts a new line; phones send with the
 	// button.
-	c.in = giode.Input.Text("Message Pocket Agent", inputStyles(false)).
-		Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label("Message")
+	c.in = giode.Input.Text(tr("Message Pocket Agent"), inputStyles(false)).
+		Lines(1, 8).SubmitOn(giode.SubmitEnterUnlessShift).Label(tr("Message"))
 	c.in.Submit(func(string) { c.submit() })
 	c.chips = giode.Scroll(func() widgets.El { return widgets.Row(widgets.St{Gap: 6}, c.chipEls...) },
 		widgets.St{ScrollBar: giode.ScrollBar{Hidden: true}}).Axis(giode.Horizontal)
@@ -88,21 +88,21 @@ func (c *composer) fullView() widgets.El {
 	a := c.a
 	giode.HandleBack(func() { c.setFull(false) })
 	canSend := !c.busy() && (c.in.Text() != "" || len(c.pending) > 0)
-	send := widgets.Button("composer/full/send", "Send", "arrow-up", widgets.BtnPrimary, func() {
+	send := widgets.Button("composer/full/send", tr("Send"), "arrow-up", widgets.BtnPrimary, func() {
 		if canSend {
 			c.setFull(false)
 			c.submit()
 		}
 	})
 	if !canSend || a.isRunning(a.current) {
-		send = widgets.Button("composer/full/send", "Send", "arrow-up", widgets.BtnSecondary, nil)
+		send = widgets.Button("composer/full/send", tr("Send"), "arrow-up", widgets.BtnSecondary, nil)
 	}
 	words := len(strings.Fields(c.in.Text()))
 	return widgets.Col(widgets.St{Width: -1, Height: -1, Gap: 8, Padding: giode.Inset{Left: 12, Right: 12, Top: 8, Bottom: 12}},
 		widgets.Row(widgets.St{Width: -1, Gap: 8},
-			widgets.IconButton("composer/collapse", "minimize-2", "Collapse", 20, theme.T.Text2, func() { c.setFull(false) }),
-			giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(fmt.Sprintf("%d words", words), theme.SizeFootnote, theme.T.Muted)),
-			widgets.IconButton("composer/full/attach", "plus", "Attach", 20, theme.T.Text2, a.openAttachSheet),
+			widgets.IconButton("composer/collapse", "minimize-2", tr("Collapse"), 20, theme.T.Text2, func() { c.setFull(false) }),
+			giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(trn("{n} words", words), theme.SizeFootnote, theme.T.Muted)),
+			widgets.IconButton("composer/full/attach", "plus", tr("Attach"), 20, theme.T.Text2, a.openAttachSheet),
 			send),
 		giode.Box(widgets.St{
 			Width: -1, FlexGrow: 1, FlexDirection: giode.FlexDirectionColumn, Padding: giode.UniformInset(10),
@@ -225,32 +225,32 @@ func (c *composer) view(compact bool) widgets.El {
 		atts = append(atts, a.attachmentChip(fmt.Sprintf("pend/%d", p.id), att, !p.done, func() { c.remove(p) }))
 	}
 
-	placeholder := "Message Pocket Agent"
+	placeholder := tr("Message Pocket Agent")
 	switch mode {
 	case store.ModeAgent:
 		if ag := a.agentByID(agentID); ag != nil {
-			placeholder = "Give " + ag.Name + " a task"
+			placeholder = tr("Give {name} a task", "name", agentName(ag))
 		}
 	case store.ModeResearch:
-		placeholder = "What should I research?"
+		placeholder = tr("What should I research?")
 	}
 
 	// Mode chip
-	modeLabel, modeIcon := "Chat", "message-square"
+	modeLabel, modeIcon := tr("Chat"), "message-square"
 	switch mode {
 	case store.ModeAgent:
-		modeLabel, modeIcon = "Agent", "bot"
+		modeLabel, modeIcon = tr("Agent"), "bot"
 		if ag := a.agentByID(agentID); ag != nil {
-			modeLabel, modeIcon = ag.Name, ag.Icon
+			modeLabel, modeIcon = agentName(ag), ag.Icon
 		}
 	case store.ModeResearch:
-		modeLabel, modeIcon = ifStr(compact, "Research", "Deep research"), "telescope"
+		modeLabel, modeIcon = ifStr(compact, tr("Research"), tr("Deep research")), "telescope"
 	}
 	tools := []widgets.El{
 		widgets.Chip("composer/mode", modeLabel, modeIcon, mode != store.ModeChat, a.openModeSheet),
 	}
 	if mode == store.ModeChat {
-		tools = append(tools, widgets.Chip("composer/web", ifStr(compact, "", "Web"), "globe", web, func() {
+		tools = append(tools, widgets.Chip("composer/web", ifStr(compact, "", tr("Web")), "globe", web, func() {
 			if conv != nil {
 				conv.WebSearch = !conv.WebSearch
 				conv.Version++
@@ -261,7 +261,7 @@ func (c *composer) view(compact bool) widgets.El {
 		}))
 	}
 	if mode == store.ModeResearch {
-		labels := map[store.ResearchDepth]string{store.DepthQuick: "Quick", store.DepthStandard: "Standard", store.DepthDeep: "Deep"}
+		labels := map[store.ResearchDepth]string{store.DepthQuick: tr("Quick"), store.DepthStandard: tr("Standard"), store.DepthDeep: tr("Deep")}
 		tools = append(tools, widgets.Chip("composer/depth", labels[depth], "gauge", false, a.openDepthSheet))
 	}
 	if a.modelThinks(a.currentModel()) {
@@ -273,12 +273,12 @@ func (c *composer) view(compact bool) widgets.El {
 	}
 	var action widgets.El
 	if running {
-		action = widgets.Tap("composer/stop", "Stop", func(s giode.PressState) widgets.El {
+		action = widgets.Tap("composer/stop", tr("Stop"), func(s giode.PressState) widgets.El {
 			return giode.Box(widgets.St{Width: 36, Height: 36, BorderRadius: 18, Background: theme.T.Text, Align: giode.AlignCenter, Justify: giode.JustifyCenter},
 				giode.Box(widgets.St{Width: 12, Height: 12, BorderRadius: 3, Background: theme.T.Bg}))
 		}, func() { a.stop(conv) })
 	} else {
-		action = widgets.Tap("composer/send", "Send", func(s giode.PressState) widgets.El {
+		action = widgets.Tap("composer/send", tr("Send"), func(s giode.PressState) widgets.El {
 			bg, fg := theme.T.Primary, theme.T.OnPrimary
 			if !canSend {
 				bg, fg = theme.T.Surface2, theme.T.Faint
@@ -300,11 +300,11 @@ func (c *composer) view(compact bool) widgets.El {
 	boxKids = append(boxKids,
 		widgets.Row(widgets.St{Width: -1, Gap: 4, Align: giode.AlignStart},
 			giode.Box(widgets.St{FlexGrow: 1}, c.in),
-			widgets.IconButton("composer/expand", "maximize-2", "Full screen", 16, theme.T.Muted, func() { c.setFull(true) })),
+			widgets.IconButton("composer/expand", "maximize-2", tr("Full screen"), 16, theme.T.Muted, func() { c.setFull(true) })),
 		// The chips scroll sideways when they don't fit, so the send
 		// button always stays in view.
 		widgets.Row(widgets.St{Width: -1, Gap: 6},
-			widgets.IconButton("composer/attach", "plus", "Attach", 20, theme.T.Text2, a.openAttachSheet),
+			widgets.IconButton("composer/attach", "plus", tr("Attach"), 20, theme.T.Text2, a.openAttachSheet),
 			giode.Box(widgets.St{FlexGrow: 1}, c.chips),
 			action),
 	)
@@ -323,9 +323,9 @@ func (c *composer) view(compact bool) widgets.El {
 		st.BoxShadow = giode.BoxShadow{Y: 4, Blur: 16, Color: theme.T.Shadow}
 	}
 	box := giode.Box(st, boxKids...)
-	hint := "Pocket Agent can make mistakes. Check important info."
+	hint := tr("Pocket Agent can make mistakes. Check important info.")
 	if a.loadingLLM != "" {
-		hint = "Loading the on-device model…"
+		hint = tr("Loading the on-device model…")
 	}
 	// Floating over a conversation there's no room for the hint under
 	// the box; it shows on a new chat.

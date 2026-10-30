@@ -24,12 +24,12 @@ func (a *App) importModel() {
 		f := files[0]
 		defer f.Close()
 		name := f.Name
-		a.toast(giode.ToastInfo, "Importing "+name+"…")
+		a.toast(giode.ToastInfo, tr("Importing {name}…", "name", name))
 		m, err := a.models.Import(name, io.Reader(f))
 		if err != nil {
 			a.toast(giode.ToastError, err.Error())
 			return
 		}
-		a.toast(giode.ToastSuccess, "Imported "+m.Name)
+		a.toast(giode.ToastSuccess, tr("Imported {name}", "name", m.Name))
 	}()
 }

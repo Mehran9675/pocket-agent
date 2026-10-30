@@ -35,7 +35,7 @@ func (a *App) confirmView() widgets.El {
 				widgets.Text(c.message, theme.SizeCallout, theme.T.Text2),
 				widgets.Row(widgets.St{Gap: 10, Width: -1},
 					widgets.Spacer(),
-					widgets.Button("confirm/no", "Cancel", "", widgets.BtnSecondary, func() { a.confirmOpen = false }),
+					widgets.Button("confirm/no", tr("Cancel"), "", widgets.BtnSecondary, func() { a.confirmOpen = false }),
 					widgets.Button("confirm/yes", c.action, "", kind, func() {
 						a.confirmOpen = false
 						c.onYes()

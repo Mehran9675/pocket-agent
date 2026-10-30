@@ -16,7 +16,7 @@ const newSkillTemplate = "---\nname: my-skill\ndescription: What the skill does 
 
 func skillPageTitle(name string) string {
 	if name == newSkillRoute {
-		return "New skill"
+		return tr("New skill")
 	}
 	return name
 }
@@ -29,7 +29,7 @@ func (a *App) skillEditorBody(name string) widgets.El {
 	if !creating {
 		var err error
 		if sk, err = a.skills.Get(name); err != nil {
-			return widgets.Text("This skill was removed.", theme.SizeCallout, theme.T.Muted)
+			return widgets.Text(tr("This skill was removed."), theme.SizeCallout, theme.T.Muted)
 		}
 	}
 	key := "skill/src/" + name
@@ -60,24 +60,24 @@ func (a *App) skillEditorBody(name string) widgets.El {
 			a.back()
 			a.navigate("settings/skill/" + s.Name)
 		}
-		a.toast(giode.ToastSuccess, "Saved "+s.Name)
+		a.toast(giode.ToastSuccess, tr("Saved {name}", "name", s.Name))
 	}
 	kids := []widgets.El{
-		widgets.Text("The frontmatter's name and description tell models what the skill is for; the rest is what they read when they use it.", theme.SizeFootnote, theme.T.Muted),
+		widgets.Text(tr("The frontmatter's name and description tell models what the skill is for; the rest is what they read when they use it."), theme.SizeFootnote, theme.T.Muted),
 		giode.Box(widgets.St{Width: -1, MinHeight: 260}, in),
 		widgets.Row(widgets.St{Gap: 10, Width: -1}, widgets.Spacer(),
-			widgets.Button("skill/save", ifStr(creating, "Create skill", "Save"), "check", widgets.BtnPrimary, save)),
+			widgets.Button("skill/save", ifStr(creating, tr("Create skill"), tr("Save")), "check", widgets.BtnPrimary, save)),
 	}
 	if sk != nil && len(sk.Files) > 0 {
 		var rows []widgets.El
 		for _, f := range sk.Files {
 			rows = append(rows, widgets.ListRow("skill/f/"+f, "file-text", theme.T.Muted, f, "", nil, nil))
 		}
-		kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel("Files"), widgets.Group(rows...)))
+		kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(tr("Files")), widgets.Group(rows...)))
 	}
 	if !creating {
-		kids = append(kids, widgets.Button("skill/rm", "Remove skill", "trash-2", widgets.BtnDanger, func() {
-			a.ask("Remove "+name+"?", "The skill and its files are deleted from this device.", "Remove", true, func() {
+		kids = append(kids, widgets.Button("skill/rm", tr("Remove skill"), "trash-2", widgets.BtnDanger, func() {
+			a.ask(tr("Remove {name}?", "name", name), tr("The skill and its files are deleted from this device."), tr("Remove"), true, func() {
 				if err := a.skills.Delete(name); err != nil {
 					a.toast(giode.ToastError, err.Error())
 					return

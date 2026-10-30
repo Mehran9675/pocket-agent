@@ -59,13 +59,13 @@ func (a *App) exportConversation(c *store.Conversation) {
 			return
 		}
 		if err != nil {
-			a.toast(giode.ToastError, "Export failed: "+err.Error())
+			a.toast(giode.ToastError, tr("Export failed: {error}", "error", err))
 			return
 		}
 		_, err = io.WriteString(w, md)
 		w.Close()
 		if err == nil {
-			a.toast(giode.ToastSuccess, "Conversation exported")
+			a.toast(giode.ToastSuccess, tr("Conversation exported"))
 		}
 	}()
 }
@@ -75,9 +75,9 @@ func (a *App) shareText(text, subject string) {
 		err := a.win.Share(context.Background(), giode.ShareText{Text: text, Subject: subject})
 		if errors.Is(err, giode.ErrNotSupported) {
 			a.win.SetClipboard(text)
-			a.toast(giode.ToastInfo, "Copied to the clipboard")
+			a.toast(giode.ToastInfo, tr("Copied to the clipboard"))
 		} else if err == nil && !isMobile() {
-			a.toast(giode.ToastInfo, "Copied to the clipboard")
+			a.toast(giode.ToastInfo, tr("Copied to the clipboard"))
 		}
 	}()
 }
@@ -86,7 +86,7 @@ func (a *App) shareFile(path, mime string) {
 	go func() {
 		err := a.win.Share(context.Background(), giode.ShareFile{Path: path, MIME: mime})
 		if err != nil {
-			a.toast(giode.ToastError, "Couldn't share: "+err.Error())
+			a.toast(giode.ToastError, tr("Couldn't share: {error}", "error", err))
 		}
 	}()
 }
@@ -105,6 +105,6 @@ func (a *App) exportAll() {
 		}
 		_, _ = w.Write([]byte(text))
 		w.Close()
-		a.toast(giode.ToastSuccess, "Export saved")
+		a.toast(giode.ToastSuccess, tr("Export saved"))
 	}()
 }

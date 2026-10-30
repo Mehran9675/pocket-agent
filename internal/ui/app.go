@@ -87,6 +87,7 @@ type App struct {
 	refresh  map[string]bool // providers whose model list is loading
 
 	providerStatus map[string]string
+	providerOK     map[string]bool
 	hfResults      []local.HFModel
 	hfFiles        map[string][]local.HFFile
 	hfBusy         bool
@@ -127,6 +128,7 @@ func New(win *giode.App, st *store.Store) *App {
 		scrolls:        map[string]*scroll.Scroll{},
 		refresh:        map[string]bool{},
 		providerStatus: map[string]string{},
+		providerOK:     map[string]bool{},
 		hfFiles:        map[string][]local.HFFile{},
 		ram:            giode.Device().TotalRAM,
 	}

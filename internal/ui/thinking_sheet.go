@@ -60,22 +60,22 @@ func (a *App) openThinkingSheet() {
 		a.saveSettings()
 	}
 	row := func(t llm.Thinking, sub string) widgets.El {
-		var tr widgets.El
+		var check widgets.El
 		if t == cur {
-			tr = widgets.Icon("check", 18, theme.T.Primary)
+			check = widgets.Icon("check", 18, theme.T.Primary)
 		}
-		return widgets.ListRow("think/"+string(t)+"x", "brain", "#f59e0b", t.Label(), sub, tr, func() { set(t) })
+		return widgets.ListRow("think/"+string(t)+"x", "brain", "#f59e0b", tr(t.Label()), sub, check, func() { set(t) })
 	}
-	a.openSheet("thinking", "Thinking", func() widgets.El {
+	a.openSheet("thinking", tr("Thinking"), func() widgets.El {
 		return widgets.Col(widgets.St{Gap: 10, Width: -1},
 			widgets.Group(
-				row(llm.ThinkingAuto, "The model decides how long to think"),
-				row(llm.ThinkingOff, "Answer right away - fastest and cheapest"),
-				row(llm.ThinkingLow, "A little reasoning for everyday questions"),
-				row(llm.ThinkingMedium, "Balanced depth and speed"),
-				row(llm.ThinkingHigh, "Thinks longest - for hard problems, math and code"),
+				row(llm.ThinkingAuto, tr("The model decides how long to think")),
+				row(llm.ThinkingOff, tr("Answer right away - fastest and cheapest")),
+				row(llm.ThinkingLow, tr("A little reasoning for everyday questions")),
+				row(llm.ThinkingMedium, tr("Balanced depth and speed")),
+				row(llm.ThinkingHigh, tr("Thinks longest - for hard problems, math and code")),
 			),
-			widgets.Text("Applies to models that reason. Some providers only offer some levels; the closest one is used.", theme.SizeFootnote, theme.T.Muted))
+			widgets.Text(tr("Applies to models that reason. Some providers only offer some levels; the closest one is used."), theme.SizeFootnote, theme.T.Muted))
 	})
 }
 
@@ -83,9 +83,9 @@ func (a *App) openThinkingSheet() {
 // models.
 func (a *App) thinkingChip(compact bool) widgets.El {
 	t := a.thinking()
-	label := t.Label()
+	label := tr(t.Label())
 	if !compact {
-		label = "Thinking: " + label
+		label = tr("Thinking: {level}", "level", label)
 	}
 	return widgets.Chip("composer/think", label, "brain", t != llm.ThinkingAuto, a.openThinkingSheet)
 }

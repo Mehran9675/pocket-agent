@@ -4,6 +4,7 @@
 package main
 
 import (
+	"embed"
 	"image"
 	"log"
 	"os"
@@ -18,6 +19,11 @@ import (
 	"github.com/mehran9675/pocket-agent/internal/ui"
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
 )
+
+// locales holds the UI translations, keyed by the English text.
+//
+//go:embed locales
+var locales embed.FS
 
 func main() {
 	st, err := openStore()
@@ -44,6 +50,7 @@ func main() {
 		Size:       image.Pt(1180, 820),
 		MinSize:    image.Pt(360, 560),
 		Resizable:  true,
+		Intl:       &giode.IntlOptions{FS: locales, Dir: "locales"},
 		Background: "theme.background",
 		// POCKET_AGENT_FRAME_TIMES=1 shows it without the setting.
 		ShowFrameTimes: settings.FrameTimes || os.Getenv("POCKET_AGENT_FRAME_TIMES") != "",
@@ -69,6 +76,7 @@ func main() {
 			}
 		},
 	})
+	ui.ApplyLanguage(settings.Language)
 	pa = ui.New(win, st)
 	if err := win.Run(pa.View); err != nil {
 		log.Fatal(err)

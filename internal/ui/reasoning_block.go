@@ -15,9 +15,9 @@ import (
 func (a *App) reasoningRows(m *store.Message, idx int, text string, active bool, add, addText func(key, token string, build func() widgets.El)) {
 	key := fmt.Sprintf("%s/think/%d", m.ID, idx)
 	open := a.expanded[key]
-	label := "Thought process"
+	label := tr("Thought process")
 	if active {
-		label = "Thinking…"
+		label = tr("Thinking…")
 	}
 	tail := ""
 	if active && !open {

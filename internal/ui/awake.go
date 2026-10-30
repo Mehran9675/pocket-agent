@@ -25,7 +25,7 @@ func (a *App) runStarted(ref store.ModelRef) {
 		}
 	}
 	if len(a.runs) == 1 && a.releaseAwake == nil {
-		if release, err := a.win.KeepAlive("Pocket Agent is finishing a reply"); err == nil {
+		if release, err := a.win.KeepAlive(tr("Pocket Agent is finishing a reply")); err == nil {
 			a.releaseAwake = release
 		}
 	}
@@ -56,7 +56,7 @@ func (a *App) runEnded(c *store.Conversation, msg *store.Message, ref store.Mode
 	}
 	title := c.Title
 	if title == "" {
-		title = "Reply ready"
+		title = tr("Reply ready")
 	}
 	go func() { _ = a.win.Notify(title, body) }()
 }
@@ -65,6 +65,8 @@ func (a *App) runEnded(c *store.Conversation, msg *store.Message, ref store.Mode
 func (a *App) approvalNeeded() {
 	giode.Haptic(giode.HapticWarning)
 	if a.inBackground.Load() {
-		go func() { _ = a.win.Notify("Approval needed", "An agent is waiting for your permission to run a tool.") }()
+		go func() {
+			_ = a.win.Notify(tr("Approval needed"), tr("An agent is waiting for your permission to run a tool."))
+		}()
 	}
 }

@@ -11,7 +11,7 @@ func (v *chatView) header(compact bool) widgets.El {
 	a := v.a
 	ref := a.currentModel()
 	name, provider := a.modelLabel(ref)
-	modelPill := widgets.Tap("header/model", "Choose model", func(s giode.PressState) widgets.El {
+	modelPill := widgets.Tap("header/model", tr("Choose model"), func(s giode.PressState) widgets.El {
 		lead := widgets.Icon("cloud", 15, theme.T.Muted)
 		if ref.Provider == store.LocalProviderID {
 			lead = widgets.Icon("cpu", 15, theme.T.Success)
@@ -29,14 +29,14 @@ func (v *chatView) header(compact bool) widgets.El {
 
 	var left, right []widgets.El
 	if compact {
-		left = append(left, widgets.IconButton("header/menu", "panel-left", "Conversations", 21, theme.T.Text, func() { a.drawerOpen = true }))
+		left = append(left, widgets.IconButton("header/menu", "panel-left", tr("Conversations"), 21, theme.T.Text, func() { a.drawerOpen = true }))
 	}
 	left = append(left, modelPill)
 	if c := a.current; c != nil && len(c.Messages) > 0 {
-		right = append(right, widgets.IconButton("header/more", "ellipsis", "Conversation options", 20, theme.T.Text2, func() { a.openConversationMenu(c) }))
+		right = append(right, widgets.IconButton("header/more", "ellipsis", tr("Conversation options"), 20, theme.T.Text2, func() { a.openConversationMenu(c) }))
 	}
 	if compact || a.current != nil {
-		right = append(right, widgets.IconButton("header/new", "square-pen", "New chat", 20, theme.T.Text, func() { a.newChat(store.ModeChat, "") }))
+		right = append(right, widgets.IconButton("header/new", "square-pen", tr("New chat"), 20, theme.T.Text, func() { a.newChat(store.ModeChat, "") }))
 	}
 	kids := append(left, widgets.Spacer())
 	if !compact && a.current != nil {

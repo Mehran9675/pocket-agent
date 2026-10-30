@@ -32,7 +32,7 @@ func (a *App) toolRow(c *store.Conversation, m *store.Message, t *store.ToolRun)
 		}
 		detail := ""
 		if t.Status == store.ToolDenied {
-			detail = "Declined"
+			detail = tr("Declined")
 		} else if t.Duration >= 100*time.Millisecond {
 			detail = fmtDuration(t.Duration)
 		}
@@ -58,8 +58,8 @@ func (a *App) toolRow(c *store.Conversation, m *store.Message, t *store.ToolRun)
 		result = string(r[:3000]) + "\n…"
 	}
 	detail := widgets.Col(widgets.St{Gap: 8, Width: -1, Padding: giode.Inset{Left: 44, Right: 8, Bottom: 6}},
-		widgets.MonoBox("Input", args),
-		widgets.When(result != "", func() widgets.El { return widgets.MonoBox("Output", result) }),
+		widgets.MonoBox(tr("Input"), args),
+		widgets.When(result != "", func() widgets.El { return widgets.MonoBox(tr("Output"), result) }),
 	)
 	return widgets.Col(widgets.St{Gap: 4, Width: -1}, header, detail)
 }

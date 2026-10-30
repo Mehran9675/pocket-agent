@@ -20,10 +20,10 @@ type sidebarView struct {
 
 func newSidebar(a *App) *sidebarView {
 	s := &sidebarView{a: a}
-	s.search = giode.Input.Text("Search", widgets.St{
+	s.search = giode.Input.Text(tr("Search"), widgets.St{
 		Background: "theme.surface", BorderColor: "transparent", BorderRadius: 10,
 		Padding: giode.Inset{Left: 36, Right: 10, Top: 9, Bottom: 9}, Color: "theme.text", FontSize: theme.SizeCallout,
-	}).Label("Search conversations")
+	}).Label(tr("Search conversations"))
 	return s
 }
 
@@ -33,7 +33,7 @@ func (s *sidebarView) view(inDrawer bool) widgets.El {
 		widgets.LogoMark(30),
 		widgets.Text("Pocket Agent", theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold),
 		widgets.Spacer(),
-		widgets.IconButton("side/new", "square-pen", "New chat", 19, theme.T.Text2, func() { a.newChat(store.ModeChat, "") }),
+		widgets.IconButton("side/new", "square-pen", tr("New chat"), 19, theme.T.Text2, func() { a.newChat(store.ModeChat, "") }),
 	)
 	searchBox := giode.Box(widgets.St{Width: -1, Padding: giode.SymmetricInset(12, 4)},
 		giode.Box(widgets.St{Width: -1},
@@ -52,16 +52,16 @@ func (s *sidebarView) view(inDrawer bool) widgets.El {
 		}, onClick)
 	}
 	navs := widgets.Col(widgets.St{Gap: 1, Width: -1, Padding: giode.SymmetricInset(8, 4)},
-		nav("agents", "bot", "Agents", strings.HasPrefix(a.route, "agents"), func() { a.navigateRoot("agents") }),
-		nav("research", "telescope", "Deep research", false, func() { a.newChat(store.ModeResearch, "") }),
-		nav("library", "hard-drive", "On-device models", a.route == "library", func() { a.navigateRoot("library") }),
+		nav("agents", "bot", tr("Agents"), strings.HasPrefix(a.route, "agents"), func() { a.navigateRoot("agents") }),
+		nav("research", "telescope", tr("Deep research"), false, func() { a.newChat(store.ModeResearch, "") }),
+		nav("library", "hard-drive", tr("On-device models"), a.route == "library", func() { a.navigateRoot("library") }),
 	)
 
 	list := a.scroll("side/list", func() widgets.El { return s.conversationList() })
 	bottom := widgets.Col(widgets.St{Width: -1, Padding: giode.SymmetricInset(8, 8)},
 		widgets.HDivider(),
 		widgets.Gap(0, 6),
-		widgets.Tap("side/settings", "Settings", func(st giode.PressState) widgets.El {
+		widgets.Tap("side/settings", tr("Settings"), func(st giode.PressState) widgets.El {
 			active := strings.HasPrefix(a.route, "settings")
 			bg := widgets.HoverBg(st, "transparent")
 			if active {
@@ -71,7 +71,7 @@ func (s *sidebarView) view(inDrawer bool) widgets.El {
 			return widgets.Row(widgets.St{Gap: 12, Padding: giode.SymmetricInset(12, 9), BorderRadius: 10, Background: bg, Width: -1},
 				widgets.Icon("settings", 18, theme.T.Text2),
 				widgets.Col(widgets.St{Gap: 1, FlexGrow: 1},
-					widgets.Text("Settings", theme.SizeCallout, theme.T.Text, giode.FontWeightMedium),
+					widgets.Text(tr("Settings"), theme.SizeCallout, theme.T.Text, giode.FontWeightMedium),
 					widgets.Line(name, theme.SizeCaption, theme.T.Muted)))
 		}, func() { a.navigateRoot("settings") }),
 	)

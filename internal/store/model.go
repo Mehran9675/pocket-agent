@@ -382,6 +382,8 @@ type Settings struct {
 	// Onboarded is set once the welcome flow finished.
 	Onboarded bool    `json:"onboarded"`
 	FontScale float64 `json:"fontScale,omitempty"`
+	// Language is the UI locale, "" for the system's.
+	Language string `json:"language,omitempty"`
 }
 
 // DefaultSettings are used on first launch.

@@ -17,27 +17,27 @@ import (
 func (a *App) fileViewer(spec string, compact bool) widgets.El {
 	parts := strings.SplitN(spec, "/", 2)
 	if len(parts) != 2 {
-		return a.pageScaffold("file", "File", compact, nil, func() widgets.El { return widgets.Text("Not found", theme.SizeBody, theme.T.Muted) })
+		return a.pageScaffold("file", tr("File"), compact, nil, func() widgets.El { return widgets.Text(tr("Not found"), theme.SizeBody, theme.T.Muted) })
 	}
 	convID, rel := parts[0], parts[1]
 	full := filepath.Join(a.st.Workspace(convID), filepath.FromSlash(rel))
 	actions := widgets.Row(widgets.St{Gap: 2},
-		widgets.IconButton("fv/copy", "copy", "Copy", 18, theme.T.Text2, func() {
+		widgets.IconButton("fv/copy", "copy", tr("Copy"), 18, theme.T.Text2, func() {
 			if b, err := os.ReadFile(full); err == nil {
 				a.copyText(string(b))
 			}
 		}),
-		widgets.IconButton("fv/share", "share", "Share", 18, theme.T.Text2, func() { a.shareFile(full, mimeOf(rel)) }),
+		widgets.IconButton("fv/share", "share", tr("Share"), 18, theme.T.Text2, func() { a.shareFile(full, mimeOf(rel)) }),
 	)
 	return a.pageScaffold("file/"+spec, lastPathElem(rel), compact, actions, func() widgets.El {
 		b, err := os.ReadFile(full)
 		if err != nil {
-			return widgets.Text("This file no longer exists.", theme.SizeBody, theme.T.Muted)
+			return widgets.Text(tr("This file no longer exists."), theme.SizeBody, theme.T.Muted)
 		}
 		if len(b) > 400_000 {
-			b = append(b[:400_000], []byte("\n\n… (truncated)")...)
+			b = append(b[:400_000], []byte(tr("\n\n… (truncated)"))...)
 		}
-		info := fmt.Sprintf("%s · %s", rel, tools.HumanBytes(int64(len(b))))
+		info := fmt.Sprintf(tr("%s · %s"), rel, tools.HumanBytes(int64(len(b))))
 		var body widgets.El
 		if strings.HasSuffix(strings.ToLower(rel), ".md") {
 			body = giode.SelectionArea("file/"+spec, a.markdown("file/"+spec, string(b)))

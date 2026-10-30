@@ -14,21 +14,21 @@ import (
 
 // openModelSheet lets the user pick the model for this chat.
 func (a *App) openModelSheet() {
-	search := a.input("models/search", "Search models", "")
+	search := a.input("models/search", tr("Search models"), "")
 	search.SetText("")
 	for _, p := range a.settings.Providers {
 		if p.Enabled && len(p.Models) == 0 && p.APIKey != "" {
 			a.refreshModels(p)
 		}
 	}
-	sh := a.openSheet("models", "Choose a model", func() widgets.El { return a.modelList(search.Text()) })
+	sh := a.openSheet("models", tr("Choose a model"), func() widgets.El { return a.modelList(search.Text()) })
 	sh.footer = func() widgets.El {
 		return widgets.Row(widgets.St{Gap: 10, Width: -1},
-			widgets.Button("models/providers", "Providers", "key-round", widgets.BtnSecondary, func() {
+			widgets.Button("models/providers", tr("Providers"), "key-round", widgets.BtnSecondary, func() {
 				a.closeSheet()
 				a.navigate("settings/providers")
 			}),
-			widgets.Button("models/library", "On-device", "hard-drive", widgets.BtnSecondary, func() {
+			widgets.Button("models/library", tr("On-device"), "hard-drive", widgets.BtnSecondary, func() {
 				a.closeSheet()
 				a.navigate("library")
 			}),
@@ -39,7 +39,7 @@ func (a *App) openModelSheet() {
 func (a *App) modelList(query string) widgets.El {
 	q := strings.ToLower(strings.TrimSpace(query))
 	cur := a.currentModel()
-	search := a.input("models/search", "Search models", "")
+	search := a.input("models/search", tr("Search models"), "")
 	kids := []widgets.El{giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Bottom: 4}}, search)}
 
 	pick := func(ref store.ModelRef) {
@@ -87,22 +87,22 @@ func (a *App) modelList(query string) widgets.El {
 			}
 			var bs []widgets.El
 			if m.Reasoning {
-				bs = append(bs, widgets.Badge("Thinking", theme.T.Text2, theme.T.Surface2))
+				bs = append(bs, widgets.Badge(tr("Thinking"), theme.T.Text2, theme.T.Surface2))
 			}
-			localRows = append(localRows, modelRow(store.ModelRef{Provider: store.LocalProviderID, Model: m.File}, m.Name, tools.HumanBytes(m.Size)+" · private, offline", bs...))
+			localRows = append(localRows, modelRow(store.ModelRef{Provider: store.LocalProviderID, Model: m.File}, m.Name, tr("{size} · private, offline", "size", tools.HumanBytes(m.Size)), bs...))
 		}
 	}
 	if len(localRows) > 0 || q == "" {
-		kids = append(kids, providerHeader("cpu", "#34d399", "On this device", ""))
+		kids = append(kids, providerHeader("cpu", "#34d399", tr("On this device"), ""))
 		if len(localRows) == 0 {
-			sub := "Download a model to chat offline"
+			sub := tr("Download a model to chat offline")
 			if !a.engine.Available() {
-				sub = "Not available on this device"
+				sub = tr("Not available on this device")
 				if a.runtime.Status().Supported {
-					sub = "Install the engine and a model"
+					sub = tr("Install the engine and a model")
 				}
 			}
-			localRows = append(localRows, widgets.ListRow("models/getlocal", "download", "#34d399", "Get an on-device model", sub, nil, func() {
+			localRows = append(localRows, widgets.ListRow("models/getlocal", "download", "#34d399", tr("Get an on-device model"), sub, nil, func() {
 				a.closeSheet()
 				a.navigate("library")
 			}))
@@ -158,7 +158,7 @@ func (a *App) modelList(query string) widgets.El {
 				if sub != "" {
 					sub += " · "
 				}
-				sub += fmt.Sprintf("%s context", compactNum(m.ContextWindow))
+				sub += fmt.Sprintf(tr("%s context"), compactNum(m.ContextWindow))
 			}
 			var bs []widgets.El
 			if pinned[m.ID] {
@@ -171,21 +171,21 @@ func (a *App) modelList(query string) widgets.El {
 		}
 		status := ""
 		if a.refresh[p.ID] {
-			status = "Loading…"
+			status = tr("Loading…")
 		} else if len(p.Models) > len(rows) && q == "" {
-			status = fmt.Sprintf("%d models · search to see all", len(p.Models))
+			status = trn("{n} models · search to see all", len(p.Models))
 		}
 		kids = append(kids, providerHeader(providerIcon(p.Preset), providerColor(p.Preset), p.Name, status))
 		if len(rows) == 0 {
-			rows = append(rows, giode.Box(widgets.St{Padding: giode.SymmetricInset(12, 8)}, widgets.Text("No models yet - check the provider's settings.", theme.SizeFootnote, theme.T.Muted)))
+			rows = append(rows, giode.Box(widgets.St{Padding: giode.SymmetricInset(12, 8)}, widgets.Text(tr("No models yet - check the provider's settings."), theme.SizeFootnote, theme.T.Muted)))
 		}
 		kids = append(kids, widgets.Col(widgets.St{Gap: 2, Width: -1}, rows...))
 	}
 	if len(a.settings.Providers) == 0 {
 		kids = append(kids, widgets.Gap(0, 8), widgets.Card(widgets.St{},
-			widgets.Text("No cloud providers yet", theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
-			widgets.Text("Add an API key for Anthropic, OpenAI, Google, OpenRouter and others to use their models here.", theme.SizeFootnote, theme.T.Muted),
-			widgets.Button("models/addprov", "Add a provider", "plus", widgets.BtnPrimary, func() {
+			widgets.Text(tr("No cloud providers yet"), theme.SizeCallout, theme.T.Text, giode.FontWeightSemiBold),
+			widgets.Text(tr("Add an API key for Anthropic, OpenAI, Google, OpenRouter and others to use their models here."), theme.SizeFootnote, theme.T.Muted),
+			widgets.Button("models/addprov", tr("Add a provider"), "plus", widgets.BtnPrimary, func() {
 				a.closeSheet()
 				a.navigate("settings/providers")
 			})))

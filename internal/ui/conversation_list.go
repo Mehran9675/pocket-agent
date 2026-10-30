@@ -29,7 +29,7 @@ func (s *sidebarView) conversationList() widgets.El {
 		for _, f := range a.settings.Folders {
 			inFolder[f.ID] = true
 		}
-		kids = append(kids, header("Folders", widgets.IconButton("side/newfolder", "folder-plus", "New folder", 16, theme.T.Muted, func() { a.openFolderName(nil, nil) })))
+		kids = append(kids, header(tr("Folders"), widgets.IconButton("side/newfolder", "folder-plus", tr("New folder"), 16, theme.T.Muted, func() { a.openFolderName(nil, nil) })))
 		for _, f := range a.settings.Folders {
 			var chats []*store.Conversation
 			for _, c := range a.convs {
@@ -58,7 +58,7 @@ func (s *sidebarView) conversationList() widgets.El {
 		}
 		bucket := dayBucket(c.Updated)
 		if c.Pinned {
-			bucket = "Pinned"
+			bucket = tr("Pinned")
 		}
 		if bucket != last {
 			last = bucket
@@ -68,9 +68,9 @@ func (s *sidebarView) conversationList() widgets.El {
 		count++
 	}
 	if count == 0 {
-		msg := "Your conversations will appear here."
+		msg := tr("Your conversations will appear here.")
 		if q != "" {
-			msg = "No conversations match “" + q + "”."
+			msg = tr("No conversations match “{query}”.", "query", q)
 		}
 		kids = append(kids, giode.Box(widgets.St{Padding: giode.UniformInset(16)}, widgets.Text(msg, theme.SizeFootnote, theme.T.Muted)))
 	}
@@ -88,7 +88,7 @@ func (s *sidebarView) folderRow(f *store.Folder, n int) widgets.El {
 		}
 		var more widgets.El = widgets.Text(fmt.Sprint(n), theme.SizeCaption, theme.T.Faint)
 		if st.Hovered {
-			more = widgets.IconButton("side/folder/more/"+f.ID, "ellipsis", "Folder options", 16, theme.T.Muted, func() { a.openFolderMenu(f) })
+			more = widgets.IconButton("side/folder/more/"+f.ID, "ellipsis", tr("Folder options"), 16, theme.T.Muted, func() { a.openFolderMenu(f) })
 		}
 		return widgets.Row(widgets.St{Gap: 10, Padding: giode.Inset{Left: 12, Right: 8, Top: 4, Bottom: 4}, MinHeight: 38, BorderRadius: 10, Background: widgets.HoverBg(st, "transparent"), Width: -1},
 			widgets.Icon("folder", 15, theme.T.Primary),

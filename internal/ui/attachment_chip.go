@@ -34,15 +34,15 @@ func (a *App) attachmentChip(key string, att store.Attachment, loading bool, onR
 	detail := tools.HumanBytes(att.Size)
 	switch {
 	case loading:
-		detail = "Reading…"
+		detail = tr("Reading…")
 	case att.Pages > 0:
-		detail = fmt.Sprintf("%d pages · %s", att.Pages, detail)
+		detail = trn("{n} pages", att.Pages) + " · " + detail
 	case att.Chars > 0:
-		detail = fmt.Sprintf("%s chars", compactNum(att.Chars))
+		detail = fmt.Sprintf(tr("%s chars"), compactNum(att.Chars))
 	}
 	kids := []widgets.El{lead, widgets.Col(widgets.St{Gap: 2, MaxWidth: 150}, widgets.Line(att.Name, theme.SizeFootnote, theme.T.Text, giode.FontWeightMedium), widgets.Line(detail, theme.SizeCaption, theme.T.Muted))}
 	if onRemove != nil {
-		kids = append(kids, widgets.IconButton(key+"/rm", "x", "Remove attachment", 14, theme.T.Muted, onRemove))
+		kids = append(kids, widgets.IconButton(key+"/rm", "x", tr("Remove attachment"), 14, theme.T.Muted, onRemove))
 	}
 	return widgets.Row(widgets.St{Gap: 10, Padding: giode.Inset{Left: 6, Top: 6, Bottom: 6, Right: 8}, BorderRadius: 14, Background: theme.T.Surface, BorderWidth: 1, BorderColor: theme.T.Border}, kids...)
 }

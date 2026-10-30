@@ -10,15 +10,15 @@ import (
 // modelLabel names a model reference for display.
 func (a *App) modelLabel(ref store.ModelRef) (name, provider string) {
 	if ref.IsZero() {
-		return "Choose a model", ""
+		return tr("Choose a model"), ""
 	}
 	if ref.Provider == store.LocalProviderID {
 		for _, m := range a.models.Installed() {
 			if m.File == ref.Model {
-				return m.Name, "On device"
+				return m.Name, tr("On device")
 			}
 		}
-		return strings.TrimSuffix(ref.Model, ".gguf"), "On device"
+		return strings.TrimSuffix(ref.Model, ".gguf"), tr("On device")
 	}
 	p := a.settings.Provider(ref.Provider)
 	if p == nil {

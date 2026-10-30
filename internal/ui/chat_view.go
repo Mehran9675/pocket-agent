@@ -58,9 +58,9 @@ func (v *chatView) view(compact bool) widgets.El {
 	a.composer.floating = false
 	return widgets.Col(widgets.St{Width: -1, Height: -1},
 		header,
-		giode.Box(widgets.St{FlexGrow: 1, Width: -1},
-			giode.Box(widgets.St{Position: giode.PositionAbsolute, Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn}, v.listView()),
-			giode.Box(widgets.St{Position: giode.PositionAbsolute, Width: -1, Height: -1, FlexDirection: giode.FlexDirectionColumn, Justify: giode.JustifyEnd}, composer)),
+		giode.Box(widgets.St{FlexGrow: 1, Width: -1, FlexDirection: giode.FlexDirectionColumn},
+			giode.Box(widgets.St{FlexGrow: 1, Width: -1, FlexDirection: giode.FlexDirectionColumn}, v.listView()),
+			giode.Box(widgets.St{Position: giode.PositionAbsolute, Left: giode.Flush, Right: giode.Flush, Bottom: giode.Flush}, composer)),
 	)
 }
 

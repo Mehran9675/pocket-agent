@@ -12,24 +12,24 @@ import (
 func (a *App) messageFooter(c *store.Conversation, m *store.Message, last bool) widgets.El {
 	text := m.ReplyText()
 	kids := []widgets.El{
-		widgets.IconButton("a/copy/"+m.ID, "copy", "Copy", 15, theme.T.Faint, func() { a.copyText(text) }),
-		widgets.IconButton("a/share/"+m.ID, "share", "Share", 15, theme.T.Faint, func() { a.shareText(text, c.Title) }),
+		widgets.IconButton("a/copy/"+m.ID, "copy", tr("Copy"), 15, theme.T.Faint, func() { a.copyText(text) }),
+		widgets.IconButton("a/share/"+m.ID, "share", tr("Share"), 15, theme.T.Faint, func() { a.shareText(text, c.Title) }),
 	}
 	if last && !a.isRunning(c) {
-		kids = append(kids, widgets.IconButton("a/regen/"+m.ID, "refresh-cw", "Regenerate", 15, theme.T.Faint, func() { a.regenerate(c) }))
+		kids = append(kids, widgets.IconButton("a/regen/"+m.ID, "refresh-cw", tr("Regenerate"), 15, theme.T.Faint, func() { a.regenerate(c) }))
 	}
 	var meta []string
 	if m.Model != "" {
 		meta = append(meta, m.Model)
 	}
 	if m.Usage.OutputTokens > 0 {
-		meta = append(meta, fmt.Sprintf("%s tokens", compactNum(m.Usage.InputTokens+m.Usage.OutputTokens)))
+		meta = append(meta, fmt.Sprintf(tr("%s tokens"), compactNum(m.Usage.InputTokens+m.Usage.OutputTokens)))
 	}
 	if tps := m.Usage.TokensPerSecond(); tps > 0 {
 		if tps < 10 {
-			meta = append(meta, fmt.Sprintf("%.1f tok/s", tps))
+			meta = append(meta, fmt.Sprintf(tr("%.1f tok/s"), tps))
 		} else {
-			meta = append(meta, fmt.Sprintf("%.0f tok/s", tps))
+			meta = append(meta, fmt.Sprintf(tr("%.0f tok/s"), tps))
 		}
 	}
 	if m.Duration > 0 {

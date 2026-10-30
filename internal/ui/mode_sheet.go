@@ -32,21 +32,21 @@ func (a *App) openModeSheet() {
 		}
 		return nil
 	}
-	a.openSheet("mode", "Mode", func() widgets.El {
+	a.openSheet("mode", tr("Mode"), func() widgets.El {
 		agentRows := []widgets.El{}
 		for _, ag := range a.agents {
 			ag := ag
-			agentRows = append(agentRows, widgets.ListRow("mode/agent/"+ag.ID, ag.Icon, ag.Color, ag.Name, ag.Description,
+			agentRows = append(agentRows, widgets.ListRow("mode/agent/"+ag.ID, ag.Icon, ag.Color, agentName(ag), agentDescription(ag),
 				check(cur == store.ModeAgent && curAgent == ag.ID), func() { set(store.ModeAgent, ag.ID) }))
 		}
 		return widgets.Col(widgets.St{Gap: 14, Width: -1},
 			widgets.Group(
-				widgets.ListRow("mode/chat", "message-square", theme.T.Primary, "Chat", "Conversation with optional tools and web search", check(cur == store.ModeChat), func() { set(store.ModeChat, "") }),
-				widgets.ListRow("mode/research", "telescope", "#38bdf8", "Deep research", "Searches and reads dozens of sources, then writes a cited report", check(cur == store.ModeResearch), func() { set(store.ModeResearch, "") }),
+				widgets.ListRow("mode/chat", "message-square", theme.T.Primary, tr("Chat"), tr("Conversation with optional tools and web search"), check(cur == store.ModeChat), func() { set(store.ModeChat, "") }),
+				widgets.ListRow("mode/research", "telescope", "#38bdf8", tr("Deep research"), tr("Searches and reads dozens of sources, then writes a cited report"), check(cur == store.ModeResearch), func() { set(store.ModeResearch, "") }),
 			),
-			widgets.SectionLabel("Agents"),
+			widgets.SectionLabel(tr("Agents")),
 			widgets.Group(agentRows...),
-			widgets.Button("mode/manage", "Manage agents", "settings", widgets.BtnSecondary, func() {
+			widgets.Button("mode/manage", tr("Manage agents"), "settings", widgets.BtnSecondary, func() {
 				a.closeSheet()
 				a.navigate("agents")
 			}, widgets.St{Width: -1}),

@@ -35,7 +35,7 @@ func (a *App) isRunning(c *store.Conversation) bool {
 
 func (a *App) copyText(s string) {
 	a.win.SetClipboard(s)
-	a.toast(giode.ToastSuccess, "Copied")
+	a.toast(giode.ToastSuccess, tr("Copied"))
 }
 
 // workspaceFiles lists a conversation's workspace.
@@ -65,13 +65,13 @@ func greeting() string {
 	h := time.Now().Hour()
 	switch {
 	case h < 5:
-		return "Working late?"
+		return tr("Working late?")
 	case h < 12:
-		return "Good morning"
+		return tr("Good morning")
 	case h < 18:
-		return "Good afternoon"
+		return tr("Good afternoon")
 	}
-	return "Good evening"
+	return tr("Good evening")
 }
 
 func compactNum(n int) string {
@@ -99,7 +99,7 @@ func titleFromText(s string) string {
 		s = string(r[:48]) + "…"
 	}
 	if s == "" {
-		s = "New chat"
+		s = tr("New chat")
 	}
 	return s
 }
@@ -134,7 +134,7 @@ func fmtDuration(d time.Duration) string {
 	case d < time.Minute:
 		return fmt.Sprintf("%.1fs", d.Seconds())
 	}
-	return fmt.Sprintf("%dm %ds", int(d.Minutes()), int(d.Seconds())%60)
+	return fmt.Sprintf(tr("%dm %ds"), int(d.Minutes()), int(d.Seconds())%60)
 }
 
 func prettyJSON(s string) string {
@@ -192,13 +192,13 @@ func dayBucket(t time.Time) string {
 	today := time.Date(y1, m1, d1, 0, 0, 0, 0, now.Location())
 	switch {
 	case !t.Before(today):
-		return "Today"
+		return tr("Today")
 	case !t.Before(today.AddDate(0, 0, -1)):
-		return "Yesterday"
+		return tr("Yesterday")
 	case !t.Before(today.AddDate(0, 0, -7)):
-		return "Previous 7 days"
+		return tr("Previous 7 days")
 	case !t.Before(today.AddDate(0, 0, -30)):
-		return "Previous 30 days"
+		return tr("Previous 30 days")
 	}
-	return "Older"
+	return tr("Older")
 }

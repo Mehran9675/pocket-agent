@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mehran9675/giode/i18n"
+
 	"github.com/mehran9675/pocket-agent/internal/ui/theme"
 )
 
@@ -81,7 +83,7 @@ func textToken(s string) string {
 
 // textEnv changes with the settings that change how text lays out.
 func (a *App) textEnv() string {
-	return fmt.Sprintf("|%g", a.settings.FontScale)
+	return fmt.Sprintf("|%g|%d", a.settings.FontScale, i18n.Version())
 }
 
 // textSize is the body text size for replies.

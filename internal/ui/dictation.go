@@ -22,7 +22,7 @@ func (c *composer) micButton() widgets.El {
 	if on {
 		color = theme.T.Danger
 	}
-	return widgets.IconButton("composer/mic", "mic", "Dictate", 20, color, func() {
+	return widgets.IconButton("composer/mic", "mic", tr("Dictate"), 20, color, func() {
 		if on {
 			c.stopDictation()
 			return
@@ -44,7 +44,7 @@ func (c *composer) startDictation() {
 		results, err := c.a.win.Dictate(ctx, "")
 		if err != nil {
 			if !errors.Is(err, context.Canceled) {
-				c.a.toast(giode.ToastError, "Dictation unavailable: "+err.Error())
+				c.a.toast(giode.ToastError, tr("Dictation unavailable: {error}", "error", err))
 			}
 			return
 		}

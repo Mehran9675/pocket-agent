@@ -55,9 +55,9 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 		}
 	}
 	if m.Streaming && (len(m.Blocks) == 0 || m.Blocks[len(m.Blocks)-1].Kind == store.BlockTool) && m.Research == nil && !awaitingApproval(m) {
-		label := "Thinking"
+		label := tr("Thinking")
 		if a.loadingLLM != "" {
-			label = "Loading model into memory"
+			label = tr("Loading model into memory")
 		}
 		add("spinner", label, func() widgets.El {
 			return widgets.Row(widgets.St{Gap: 10, Padding: giode.Inset{Top: 2}},
@@ -86,18 +86,18 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 				giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(m.Error, theme.SizeCallout, theme.T.Text)),
 				widgets.When(last && !running && m.Paused, func() widgets.El {
 					return widgets.Col(widgets.St{Gap: 8},
-						widgets.Button("continue/"+m.ID, "Continue", "play", widgets.BtnPrimary, func() { a.send("Continue where you left off.", nil) }),
-						widgets.Button("wrapup/"+m.ID, "Wrap up", "check", widgets.BtnSecondary, func() { a.wrapUp(c) }))
+						widgets.Button("continue/"+m.ID, tr("Continue"), "play", widgets.BtnPrimary, func() { a.send(tr("Continue where you left off."), nil) }),
+						widgets.Button("wrapup/"+m.ID, tr("Wrap up"), "check", widgets.BtnSecondary, func() { a.wrapUp(c) }))
 				}),
 				widgets.When(last && !running && !m.Paused, func() widgets.El {
-					return widgets.Button("retry/"+m.ID, "Retry", "rotate-ccw", widgets.BtnSecondary, func() { a.regenerate(c) })
+					return widgets.Button("retry/"+m.ID, tr("Retry"), "rotate-ccw", widgets.BtnSecondary, func() { a.regenerate(c) })
 				}),
 			)
 		})
 	}
 	if m.Stopped {
 		add("stopped", state, func() widgets.El {
-			return widgets.Row(widgets.St{Gap: 6}, widgets.Icon("square", 13, theme.T.Faint), widgets.Text("Stopped", theme.SizeFootnote, theme.T.Faint))
+			return widgets.Row(widgets.St{Gap: 6}, widgets.Icon("square", 13, theme.T.Faint), widgets.Text(tr("Stopped"), theme.SizeFootnote, theme.T.Faint))
 		})
 	}
 	if !m.Streaming {

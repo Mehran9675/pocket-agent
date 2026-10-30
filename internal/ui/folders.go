@@ -38,11 +38,11 @@ func (a *App) deleteFolder(f *store.Folder) {
 // openFolderName asks for a folder's name: a new folder when f is nil,
 // which done receives.
 func (a *App) openFolderName(f *store.Folder, done func(*store.Folder)) {
-	title, init, key := "New folder", "", "folder/new"
+	title, init, key := tr("New folder"), "", "folder/new"
 	if f != nil {
-		title, init, key = "Rename folder", f.Name, "folder/rename/"+f.ID
+		title, init, key = tr("Rename folder"), f.Name, "folder/rename/"+f.ID
 	}
-	in := a.input(key, "Folder name", init)
+	in := a.input(key, tr("Folder name"), init)
 	in.SetText(init)
 	save := func() {
 		name := strings.TrimSpace(in.Text())
@@ -67,15 +67,15 @@ func (a *App) openFolderName(f *store.Folder, done func(*store.Folder)) {
 	})
 	sh.footer = func() widgets.El {
 		return widgets.Row(widgets.St{Gap: 10, Width: -1}, widgets.Spacer(),
-			widgets.Button("folder/cancel", "Cancel", "", widgets.BtnSecondary, a.closeSheet),
-			widgets.Button("folder/save", ifStr(f == nil, "Create", "Save"), "", widgets.BtnPrimary, save))
+			widgets.Button("folder/cancel", tr("Cancel"), "", widgets.BtnSecondary, a.closeSheet),
+			widgets.Button("folder/save", ifStr(f == nil, tr("Create"), tr("Save")), "", widgets.BtnPrimary, save))
 	}
 	in.Focus()
 }
 
 // openMoveToFolder lets the user pick c's folder.
 func (a *App) openMoveToFolder(c *store.Conversation) {
-	a.openSheet("movefolder", "Move to folder", func() widgets.El {
+	a.openSheet("movefolder", tr("Move to folder"), func() widgets.El {
 		check := func(on bool) widgets.El {
 			if on {
 				return widgets.Icon("check", 18, theme.T.Primary)
@@ -83,7 +83,7 @@ func (a *App) openMoveToFolder(c *store.Conversation) {
 			return nil
 		}
 		rows := []widgets.El{
-			widgets.ListRow("move/none", "message-square", theme.T.Muted, "No folder", "Show it in the main list", check(c.Folder == ""), func() {
+			widgets.ListRow("move/none", "message-square", theme.T.Muted, tr("No folder"), tr("Show it in the main list"), check(c.Folder == ""), func() {
 				a.closeSheet()
 				a.moveToFolder(c, "")
 			}),
@@ -94,7 +94,7 @@ func (a *App) openMoveToFolder(c *store.Conversation) {
 				a.moveToFolder(c, f.ID)
 			}))
 		}
-		rows = append(rows, widgets.ListRow("move/new", "folder-plus", theme.T.Primary, "New folder…", "", nil, func() {
+		rows = append(rows, widgets.ListRow("move/new", "folder-plus", theme.T.Primary, tr("New folder…"), "", nil, func() {
 			a.openFolderName(nil, func(f *store.Folder) { a.moveToFolder(c, f.ID) })
 		}))
 		return widgets.Group(rows...)
@@ -106,12 +106,12 @@ func (a *App) openFolderMenu(f *store.Folder) {
 	a.openSheet("foldermenu", f.Name, func() widgets.El {
 		return widgets.Col(widgets.St{Gap: 12, Width: -1},
 			widgets.Group(
-				widgets.ListRow("fm/rename", "pencil", theme.T.Primary, "Rename", "", nil, func() { a.openFolderName(f, nil) }),
+				widgets.ListRow("fm/rename", "pencil", theme.T.Primary, tr("Rename"), "", nil, func() { a.openFolderName(f, nil) }),
 			),
 			widgets.Group(
-				widgets.ListRow("fm/delete", "trash-2", theme.T.Danger, "Delete folder", "Its conversations move back to the list", nil, func() {
+				widgets.ListRow("fm/delete", "trash-2", theme.T.Danger, tr("Delete folder"), tr("Its conversations move back to the list"), nil, func() {
 					a.closeSheet()
-					a.ask("Delete “"+f.Name+"”?", "The folder is removed; its conversations stay, in the main list.", "Delete folder", true, func() { a.deleteFolder(f) })
+					a.ask(tr("Delete “{name}”?", "name", f.Name), tr("The folder is removed; its conversations stay, in the main list."), tr("Delete folder"), true, func() { a.deleteFolder(f) })
 				}),
 			),
 		)
@@ -121,7 +121,7 @@ func (a *App) openFolderMenu(f *store.Folder) {
 // folderName names c's folder for menus.
 func folderName(a *App, c *store.Conversation) string {
 	if f := a.settings.Folder(c.Folder); f != nil {
-		return "In " + f.Name
+		return tr("In {folder}", "folder", f.Name)
 	}
 	return ""
 }

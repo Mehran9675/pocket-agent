@@ -11,7 +11,7 @@ func (a *App) openDefaultModelSheet() {
 	saved := a.draft.model
 	a.draft.model = a.settings.DefaultModel
 	a.openModelSheet()
-	a.sheet.title = "Default model"
+	a.sheet.title = tr("Default model")
 	inner := a.sheet.body
 	a.sheet.body = func() widgets.El {
 		if a.draft.model != a.settings.DefaultModel {

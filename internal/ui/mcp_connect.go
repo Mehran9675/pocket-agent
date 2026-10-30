@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/mehran9675/pocket-agent/internal/tools"
@@ -20,7 +19,7 @@ func (a *App) connectMCP() {
 func (a *App) connectServer(srv tools.MCPServer) {
 	cl := tools.NewMCPClient(srv)
 	a.mcp[srv.ID] = cl
-	a.mcpStatus[srv.ID] = "Connecting…"
+	a.mcpStatus[srv.ID] = tr("Connecting…")
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -30,12 +29,12 @@ func (a *App) connectServer(srv tools.MCPServer) {
 				return
 			}
 			if err != nil {
-				a.mcpStatus[srv.ID] = "Error: " + err.Error()
+				a.mcpStatus[srv.ID] = tr("Error: {error}", "error", err)
 				delete(a.mcpTools, srv.ID)
 				return
 			}
 			a.mcpTools[srv.ID] = ts
-			a.mcpStatus[srv.ID] = fmt.Sprintf("Connected · %d tools", len(ts))
+			a.mcpStatus[srv.ID] = trn("Connected · {n} tools", len(ts))
 		})
 	}()
 }

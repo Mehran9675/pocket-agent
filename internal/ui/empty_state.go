@@ -21,31 +21,31 @@ func (v *chatView) emptyState(compact bool) widgets.El {
 	}
 	modeIdx := map[store.Mode]int{store.ModeChat: 0, store.ModeAgent: 1, store.ModeResearch: 2}[mode]
 
-	title, subtitle := greeting(), "What can I help you with?"
+	title, subtitle := greeting(), tr("What can I help you with?")
 	var suggestions []string
 	accent := theme.T.Primary
 	icon := ""
 	switch mode {
 	case store.ModeAgent:
 		if ag := a.agentByID(agentID); ag != nil {
-			title, subtitle = ag.Name, ag.Description
-			suggestions = ag.Starters
+			title, subtitle = agentName(ag), agentDescription(ag)
+			suggestions = agentStarters(ag)
 			accent, icon = ag.Color, ag.Icon
 		}
 	case store.ModeResearch:
-		title, subtitle = "Deep research", "Ask a question. Pocket Agent plans, searches and reads the web, then writes a cited report."
+		title, subtitle = tr("Deep research"), tr("Ask a question. Pocket Agent plans, searches and reads the web, then writes a cited report.")
 		suggestions = []string{
-			"How do the leading on-device AI chips compare in 2026?",
-			"What does the latest research say about microplastics and health?",
-			"Compare the costs of heat pumps vs. gas boilers in Europe",
+			tr("How do the leading on-device AI chips compare in 2026?"),
+			tr("What does the latest research say about microplastics and health?"),
+			tr("Compare the costs of heat pumps vs. gas boilers in Europe"),
 		}
 		accent, icon = "#38bdf8", "telescope"
 	default:
 		suggestions = []string{
-			"Explain quantum error correction like I'm an engineer",
-			"Draft a polite follow-up email after a job interview",
-			"Plan a high-protein vegetarian week of meals",
-			"Write a regex that validates ISO 8601 dates",
+			tr("Explain quantum error correction like I'm an engineer"),
+			tr("Draft a polite follow-up email after a job interview"),
+			tr("Plan a high-protein vegetarian week of meals"),
+			tr("Write a regex that validates ISO 8601 dates"),
 		}
 	}
 	var mark widgets.El = widgets.LogoMark(52)
@@ -72,7 +72,7 @@ func (v *chatView) emptyState(compact bool) widgets.El {
 			giode.Text(subtitle, widgets.St{FontSize: theme.SizeBody, Color: theme.T.Muted, TextAlign: giode.TextAlignCenter}),
 		),
 		giode.Box(widgets.St{Width: -1, Padding: giode.Inset{Top: 4}}, widgets.Centered(420,
-			widgets.Segmented("empty/mode", []string{"Chat", "Agent", "Research"}, []string{"message-square", "bot", "telescope"}, modeIdx, func(i int) {
+			widgets.Segmented("empty/mode", []string{tr("Chat"), tr("Agent"), tr("Research")}, []string{"message-square", "bot", "telescope"}, modeIdx, func(i int) {
 				m := []store.Mode{store.ModeChat, store.ModeAgent, store.ModeResearch}[i]
 				a.newChat(m, "")
 			}))),

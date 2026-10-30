@@ -21,8 +21,8 @@ func (a *App) agentEditor(id string, compact bool) widgets.El {
 	if ag == nil {
 		return a.agentsPage(compact)
 	}
-	return a.pageScaffold("agentedit/"+id, ag.Name, compact,
-		widgets.Button("agentedit/save/"+id, "Save", "check", widgets.BtnPrimary, func() { a.saveAgent(ag) }),
+	return a.pageScaffold("agentedit/"+id, agentName(ag), compact,
+		widgets.Button("agentedit/save/"+id, tr("Save"), "check", widgets.BtnPrimary, func() { a.saveAgent(ag) }),
 		func() widgets.El { return a.agentEditorBody(ag) })
 }
 
@@ -47,17 +47,17 @@ func (a *App) saveAgent(ag *store.Agent) {
 	}
 	ag.Starters = starters
 	a.st.SaveAgents(a.agents)
-	a.toast(giode.ToastSuccess, "Agent saved")
+	a.toast(giode.ToastSuccess, tr("Agent saved"))
 }
 
 func (a *App) agentEditorBody(ag *store.Agent) widgets.El {
 	k := "agent/" + ag.ID + "/"
-	name := a.input(k+"name", "Name", ag.Name)
-	desc := a.input(k+"desc", "What it's for", ag.Description)
-	instr := a.input(k+"instr", "Instructions", ag.Instructions, func(i *input.Input) { i.Multiline(true) })
+	name := a.input(k+"name", tr("Name"), ag.Name)
+	desc := a.input(k+"desc", tr("What it's for"), ag.Description)
+	instr := a.input(k+"instr", tr("Instructions"), ag.Instructions, func(i *input.Input) { i.Multiline(true) })
 	steps := a.input(k+"steps", "20", strconv.Itoa(ag.MaxSteps), func(i *input.Input) { i.Keyboard(giode.KeyboardNumeric) })
 	budget := a.input(k+"budget", strconv.Itoa(store.DefaultTokenBudget), strconv.Itoa(ag.Budget()/1000), func(i *input.Input) { i.Keyboard(giode.KeyboardNumeric) })
-	starters := a.input(k+"starters", "One suggestion per line", strings.Join(ag.Starters, "\n"), func(i *input.Input) { i.Multiline(true) })
+	starters := a.input(k+"starters", tr("One suggestion per line"), strings.Join(ag.Starters, "\n"), func(i *input.Input) { i.Multiline(true) })
 
 	label := func(s string) widgets.El {
 		return widgets.Text(s, theme.SizeFootnote, theme.T.Text2, giode.FontWeightMedium)
@@ -108,37 +108,37 @@ func (a *App) agentEditorBody(ag *store.Agent) widgets.El {
 	var toolRows []widgets.El
 	for _, t := range tools.Builtins() {
 		t := t
-		toolRows = append(toolRows, widgets.ListRow(k+"tool/"+t.Name, t.Icon, ag.Color, t.Title, firstSentence(t.Description), widgets.Toggle(k+"tt/"+t.Name, enabled[t.Name], func(v bool) { setTool(t.Name, v) }), nil))
+		toolRows = append(toolRows, widgets.ListRow(k+"tool/"+t.Name, t.Icon, ag.Color, tr(t.Title), toolSummary(t), widgets.Toggle(k+"tt/"+t.Name, enabled[t.Name], func(v bool) { setTool(t.Name, v) }), nil))
 	}
 
 	kids := []widgets.El{
-		widgets.Row(widgets.St{Gap: 14, Width: -1}, widgets.IconTile(ag.Icon, ag.Color, 56), widgets.Col(widgets.St{Gap: 4, FlexGrow: 1}, label("Name"), name)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Description"), desc),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Icon"), giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap}, icons...)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Color"), giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap}, colors...)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Instructions"), widgets.Text("The agent's system prompt: its role, method and what a finished job looks like.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: -1, MinHeight: 160}, instr)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Conversation starters"), giode.Box(widgets.St{Width: -1, MinHeight: 90}, starters)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Maximum steps"), widgets.Text("How many model calls the agent may make for one task.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, steps)),
-		widgets.Col(widgets.St{Gap: 6, Width: -1}, label("Token budget (thousands)"), widgets.Text("The agent pauses once a task has used this many tokens; Continue resumes it.", theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, budget)),
-		widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel("Tools"), widgets.Group(toolRows...)),
-		widgets.Group(widgets.ListRow(k+"auto", "shield-check", theme.T.Warning, "Run without asking", "Skip approval for actions like deleting files and MCP writes", widgets.Toggle(k+"autot", ag.AutoApprove, func(v bool) {
+		widgets.Row(widgets.St{Gap: 14, Width: -1}, widgets.IconTile(ag.Icon, ag.Color, 56), widgets.Col(widgets.St{Gap: 4, FlexGrow: 1}, label(tr("Name")), name)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Description")), desc),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Icon")), giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap}, icons...)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Color")), giode.Row(widgets.St{Gap: 8, Wrap: giode.WrapWrap}, colors...)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Instructions")), widgets.Text(tr("The agent's system prompt: its role, method and what a finished job looks like."), theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: -1, MinHeight: 160}, instr)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Conversation starters")), giode.Box(widgets.St{Width: -1, MinHeight: 90}, starters)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Maximum steps")), widgets.Text(tr("How many model calls the agent may make for one task."), theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, steps)),
+		widgets.Col(widgets.St{Gap: 6, Width: -1}, label(tr("Token budget (thousands)")), widgets.Text(tr("The agent pauses once a task has used this many tokens; Continue resumes it."), theme.SizeCaption, theme.T.Muted), giode.Box(widgets.St{Width: 120}, budget)),
+		widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(tr("Tools")), widgets.Group(toolRows...)),
+		widgets.Group(widgets.ListRow(k+"auto", "shield-check", theme.T.Warning, tr("Run without asking"), tr("Skip approval for actions like deleting files and MCP writes"), widgets.Toggle(k+"autot", ag.AutoApprove, func(v bool) {
 			ag.AutoApprove = v
 			a.st.SaveAgents(a.agents)
 		}), nil)),
 	}
 	if ag.Builtin {
-		kids = append(kids, widgets.Text("Built-in agents can be customized; changes to built-ins aren't saved across reinstalls. Duplicate one to make your own.", theme.SizeCaption, theme.T.Muted),
-			widgets.Button(k+"dup", "Duplicate", "copy", widgets.BtnSecondary, func() {
+		kids = append(kids, widgets.Text(tr("Built-in agents can be customized; changes to built-ins aren't saved across reinstalls. Duplicate one to make your own."), theme.SizeCaption, theme.T.Muted),
+			widgets.Button(k+"dup", tr("Duplicate"), "copy", widgets.BtnSecondary, func() {
 				cp := *ag
-				cp.ID, cp.Builtin, cp.Name = store.NewID(), false, ag.Name+" copy"
+				cp.ID, cp.Builtin, cp.Name = store.NewID(), false, tr("{name} copy", "name", agentName(ag))
 				cp.Tools = append([]string(nil), ag.Tools...)
 				a.agents = append(a.agents, &cp)
 				a.st.SaveAgents(a.agents)
 				a.navigate("agents/edit/" + cp.ID)
 			}))
 	} else {
-		kids = append(kids, widgets.Button(k+"delete", "Delete agent", "trash-2", widgets.BtnDanger, func() {
-			a.ask("Delete "+ag.Name+"?", "Conversations with it are kept.", "Delete", true, func() {
+		kids = append(kids, widgets.Button(k+"delete", tr("Delete agent"), "trash-2", widgets.BtnDanger, func() {
+			a.ask(tr("Delete {name}?", "name", agentName(ag)), tr("Conversations with it are kept."), tr("Delete"), true, func() {
 				for i, x := range a.agents {
 					if x == ag {
 						a.agents = append(a.agents[:i], a.agents[i+1:]...)
@@ -150,7 +150,7 @@ func (a *App) agentEditorBody(ag *store.Agent) widgets.El {
 			})
 		}))
 	}
-	kids = append(kids, widgets.Button(k+"start", "Start a task with "+ag.Name, "play", widgets.BtnPrimary, func() {
+	kids = append(kids, widgets.Button(k+"start", tr("Start a task with {name}", "name", agentName(ag)), "play", widgets.BtnPrimary, func() {
 		a.saveAgent(ag)
 		a.newChat(store.ModeAgent, ag.ID)
 	}, widgets.St{Width: -1}))

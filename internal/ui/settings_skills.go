@@ -27,25 +27,24 @@ func (a *App) skillsBody() widgets.El {
 	}
 	urlIn := a.input("skills/url", "https://github.com/…/SKILL.md or a .zip link", "", func(i *input.Input) { i.Keyboard(giode.KeyboardURL) })
 	kids := []widgets.El{
-		widgets.Text("Skills teach models how to do specific tasks: a SKILL.md with a name, a description of when to use it and instructions, "+
-			"plus any files it needs. Chats and agents see the enabled skills and load one when a task calls for it.", theme.SizeFootnote, theme.T.Muted),
+		widgets.Text(tr("Skills teach models how to do specific tasks: a SKILL.md with a name, a description of when to use it and instructions, plus any files it needs. Chats and agents see the enabled skills and load one when a task calls for it."), theme.SizeFootnote, theme.T.Muted),
 	}
 	if len(rows) > 0 {
-		kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(fmt.Sprintf("Installed · %d", len(list))), widgets.Group(rows...)))
+		kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(fmt.Sprintf(tr("Installed · %d"), len(list))), widgets.Group(rows...)))
 	}
-	kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel("Add a skill"), widgets.Card(widgets.St{Gap: 12},
+	kids = append(kids, widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(tr("Add a skill")), widgets.Card(widgets.St{Gap: 12},
 		widgets.Row(widgets.St{Gap: 10, Width: -1, Wrap: giode.WrapWrap},
-			widgets.Button("skills/file", "Install from file", "upload", widgets.BtnSecondary, a.installSkillFile),
-			widgets.Button("skills/new", "Create a skill", "plus", widgets.BtnSecondary, func() { a.navigate("settings/skill/" + newSkillRoute) })),
-		widgets.Text("A .zip with a SKILL.md inside, or a SKILL.md on its own.", theme.SizeFootnote, theme.T.Muted),
+			widgets.Button("skills/file", tr("Install from file"), "upload", widgets.BtnSecondary, a.installSkillFile),
+			widgets.Button("skills/new", tr("Create a skill"), "plus", widgets.BtnSecondary, func() { a.navigate("settings/skill/" + newSkillRoute) })),
+		widgets.Text(tr("A .zip with a SKILL.md inside, or a SKILL.md on its own."), theme.SizeFootnote, theme.T.Muted),
 		urlIn,
-		widgets.Button("skills/url/go", "Install from link", "download", widgets.BtnPrimary, func() {
+		widgets.Button("skills/url/go", tr("Install from link"), "download", widgets.BtnPrimary, func() {
 			u := strings.TrimSpace(urlIn.Text())
 			if !strings.HasPrefix(u, "http") {
-				a.toast(giode.ToastWarning, "Enter a link to a SKILL.md or a .zip")
+				a.toast(giode.ToastWarning, tr("Enter a link to a SKILL.md or a .zip"))
 				return
 			}
-			a.toast(giode.ToastInfo, "Downloading skill…")
+			a.toast(giode.ToastInfo, tr("Downloading skill…"))
 			go func() {
 				s, err := a.skills.InstallURL(context.Background(), u)
 				a.Post(func() {
@@ -91,5 +90,5 @@ func (a *App) installSkillFile() {
 // skillInstalled turns a newly installed skill on.
 func (a *App) skillInstalled(s *skills.Skill) {
 	a.setSkillEnabled(s.Name, true)
-	a.toast(giode.ToastSuccess, "Installed "+s.Name)
+	a.toast(giode.ToastSuccess, tr("Installed {name}", "name", s.Name))
 }

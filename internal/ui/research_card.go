@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/mehran9675/giode"
@@ -19,8 +18,8 @@ func (a *App) researchCard(m *store.Message) widgets.El {
 		p     store.ResearchPhase
 		label string
 	}{
-		{store.PhasePlanning, "Plan"}, {store.PhaseSearching, "Search"}, {store.PhaseReading, "Read"},
-		{store.PhaseReflecting, "Reflect"}, {store.PhaseWriting, "Write"},
+		{store.PhasePlanning, tr("Plan")}, {store.PhaseSearching, tr("Search")}, {store.PhaseReading, tr("Read")},
+		{store.PhaseReflecting, tr("Reflect")}, {store.PhaseWriting, tr("Write")},
 	}
 	order := map[store.ResearchPhase]int{store.PhasePlanning: 0, store.PhaseSearching: 1, store.PhaseReading: 2, store.PhaseReflecting: 3, store.PhaseWriting: 4, store.PhaseDone: 5}
 	cur := order[r.Phase]
@@ -37,17 +36,17 @@ func (a *App) researchCard(m *store.Message) widgets.El {
 			widgets.Text(ph.label, theme.SizeCaption, fg, giode.FontWeightMedium)))
 	}
 	status := map[store.ResearchPhase]string{
-		store.PhasePlanning: "Planning the research", store.PhaseSearching: "Searching the web",
-		store.PhaseReading: "Reading sources", store.PhaseReflecting: "Looking for gaps",
-		store.PhaseWriting: "Writing the report", store.PhaseDone: "Research complete",
-		store.PhaseFailed: "Research failed", store.PhaseCanceledPart: "Research stopped",
+		store.PhasePlanning: tr("Planning the research"), store.PhaseSearching: tr("Searching the web"),
+		store.PhaseReading: tr("Reading sources"), store.PhaseReflecting: tr("Looking for gaps"),
+		store.PhaseWriting: tr("Writing the report"), store.PhaseDone: tr("Research complete"),
+		store.PhaseFailed: tr("Research failed"), store.PhaseCanceledPart: tr("Research stopped"),
 	}[r.Phase]
 	elapsed := r.Elapsed
 	if !finished && !r.Started.IsZero() {
 		elapsed = time.Since(r.Started)
 	}
-	summary := fmt.Sprintf("%d sources · %d notes · %s", len(r.Sources), r.Notes, fmtDuration(elapsed.Round(time.Second)))
-	head := widgets.Tap(key, "Research progress", func(s giode.PressState) widgets.El {
+	summary := trn("{n} sources", len(r.Sources)) + " · " + trn("{n} notes", r.Notes) + " · " + fmtDuration(elapsed.Round(time.Second))
+	head := widgets.Tap(key, tr("Research progress"), func(s giode.PressState) widgets.El {
 		var lead widgets.El = giode.Spinner(widgets.St{Width: 18, Height: 18, Color: "#38bdf8"})
 		if finished {
 			lead = widgets.IconTile("telescope", "#38bdf8", 30)
@@ -88,7 +87,7 @@ func (a *App) researchCard(m *store.Message) widgets.El {
 			}
 			detail := ""
 			if q.Found > 0 {
-				detail = fmt.Sprintf("%d read", q.Read)
+				detail = trn("{n} read", q.Read)
 			}
 			qs = append(qs, widgets.Row(widgets.St{Gap: 10, Width: -1},
 				icon,

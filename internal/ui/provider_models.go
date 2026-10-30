@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ func (a *App) refreshModels(p *store.ProviderConfig) {
 	}
 	a.refresh[p.ID] = true
 	a.providerStatus[p.ID] = ""
+	a.providerOK[p.ID] = false
 	ref := store.ModelRef{Provider: p.ID, Model: "x"}
 	prov, _, err := a.resolve(ref)
 	if err != nil {
@@ -32,12 +32,13 @@ func (a *App) refreshModels(p *store.ProviderConfig) {
 		a.Post(func() {
 			a.refresh[p.ID] = false
 			if err != nil {
-				a.providerStatus[p.ID] = agent.FriendlyError(err)
+				a.providerStatus[p.ID] = tr(agent.FriendlyError(err))
 				return
 			}
 			models = filterChatModels(p.Preset, models)
 			p.Models = models
-			a.providerStatus[p.ID] = fmt.Sprintf("Connected · %d models", len(models))
+			a.providerStatus[p.ID] = trn("Connected · {n} models", len(models))
+			a.providerOK[p.ID] = true
 			if a.settings.DefaultModel.IsZero() && len(models) > 0 {
 				a.settings.DefaultModel = store.ModelRef{Provider: p.ID, Model: preferredModel(p.Preset, models)}
 				a.draft.model = a.settings.DefaultModel

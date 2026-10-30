@@ -9,33 +9,33 @@ import (
 func (a *App) settingsPage(sub string, compact bool) widgets.El {
 	switch {
 	case sub == "providers":
-		return a.pageScaffold("providers", "Model providers", compact, nil, a.providersBody)
+		return a.pageScaffold("providers", tr("Model providers"), compact, nil, a.providersBody)
 	case strings.HasPrefix(sub, "provider/"):
 		id := strings.TrimPrefix(sub, "provider/")
 		return a.pageScaffold("provider/"+id, a.providerTitle(id), compact, nil, func() widgets.El { return a.providerBody(id) })
 	case sub == "search":
-		return a.pageScaffold("search", "Web search", compact, nil, a.searchBody)
+		return a.pageScaffold("search", tr("Web search"), compact, nil, a.searchBody)
 	case sub == "tools":
-		return a.pageScaffold("tools", "Tools & permissions", compact, nil, a.toolsBody)
+		return a.pageScaffold("tools", tr("Tools & permissions"), compact, nil, a.toolsBody)
 	case sub == "mcp":
-		return a.pageScaffold("mcp", "MCP servers", compact, nil, a.mcpBody)
+		return a.pageScaffold("mcp", tr("MCP servers"), compact, nil, a.mcpBody)
 	case sub == "skills":
-		return a.pageScaffold("skills", "Skills", compact, nil, a.skillsBody)
+		return a.pageScaffold("skills", tr("Skills"), compact, nil, a.skillsBody)
 	case strings.HasPrefix(sub, "skill/"):
 		name := strings.TrimPrefix(sub, "skill/")
 		return a.pageScaffold("skill/"+name, skillPageTitle(name), compact, nil, func() widgets.El { return a.skillEditorBody(name) })
 	case sub == "memory":
-		return a.pageScaffold("memory", "Memory", compact, nil, a.memoryBody)
+		return a.pageScaffold("memory", tr("Memory"), compact, nil, a.memoryBody)
 	case sub == "instructions":
-		return a.pageScaffold("instructions", "Custom instructions", compact, nil, a.instructionsBody)
+		return a.pageScaffold("instructions", tr("Custom instructions"), compact, nil, a.instructionsBody)
 	case sub == "local/perf":
-		return a.pageScaffold("local/perf", "Performance & memory", compact, nil, a.enginePerfBody)
+		return a.pageScaffold("local/perf", tr("Performance & memory"), compact, nil, a.enginePerfBody)
 	case sub == "local/sampling":
-		return a.pageScaffold("local/sampling", "Sampling", compact, nil, a.samplingBody)
+		return a.pageScaffold("local/sampling", tr("Sampling"), compact, nil, a.samplingBody)
 	case sub == "local":
-		return a.pageScaffold("local", "On-device engine", compact, nil, a.engineBody)
+		return a.pageScaffold("local", tr("On-device engine"), compact, nil, a.engineBody)
 	case sub == "about":
-		return a.pageScaffold("about", "About", compact, nil, a.aboutBody)
+		return a.pageScaffold("about", tr("About"), compact, nil, a.aboutBody)
 	}
-	return a.pageScaffold("settings", "Settings", compact, nil, a.settingsHome)
+	return a.pageScaffold("settings", tr("Settings"), compact, nil, a.settingsHome)
 }
