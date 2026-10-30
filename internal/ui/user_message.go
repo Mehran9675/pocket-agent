@@ -10,6 +10,12 @@ import (
 )
 
 func (a *App) userMessage(c *store.Conversation, m *store.Message) widgets.El {
+	if m.WrapUp {
+		// The instruction is for the model; the user sees their choice.
+		return giode.Box(widgets.St{Width: -1, Justify: giode.JustifyEnd},
+			widgets.Row(widgets.St{Gap: 6, Padding: giode.SymmetricInset(12, 6), BorderRadius: 14, Background: theme.T.UserBubble},
+				widgets.Icon("check", 14, theme.T.Muted), widgets.Text("Wrap up and show the results", theme.SizeFootnote, theme.T.Muted)))
+	}
 	var kids []widgets.El
 	if len(m.Attachments) > 0 {
 		var atts []widgets.El

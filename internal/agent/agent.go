@@ -48,6 +48,9 @@ type Run struct {
 	// Approve decides whether a tool needing approval may run; it may
 	// block (waiting for the user). Nil approves everything.
 	Approve func(ctx context.Context, call llm.ToolCall, tool *tools.Tool) bool
+	// Final asks for the answer in one step: tool calls in the reply
+	// are dropped instead of run.
+	Final bool
 	// NeedsApproval overrides the tool's own Approval flag.
 	NeedsApproval func(tool *tools.Tool) bool
 	Observer      Observer
@@ -70,13 +73,16 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 	if maxSteps <= 0 {
 		maxSteps = 12
 	}
+	if r.Final {
+		maxSteps = 1
+	}
 	msgs := append([]llm.Message(nil), r.Messages...)
 	start := len(msgs)
 	var specs []llm.ToolSpec
 	if r.Tools != nil {
 		specs = r.Tools.Specs()
 	}
-	used, last := 0, 0
+	used := 0
 	for step := 0; step < maxSteps; step++ {
 		// Checked between steps, when every tool call has its result,
 		// so the conversation can be continued later.
@@ -93,9 +99,6 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			Thinking:  r.Thinking,
 			MaxTokens: r.MaxTokens,
 		}
-		if r.wrappingUp(step, maxSteps, used, last) {
-			req.Messages = withWrapUpNote(req.Messages)
-		}
 		resp, err := chat(ctx, r.Provider, req, func(ev llm.Event) {
 			switch ev.Kind {
 			case llm.EventText:
@@ -108,8 +111,7 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			return msgs[start:], err
 		}
 		r.Observer.Usage(resp.Usage)
-		last = resp.Usage.InputTokens + resp.Usage.OutputTokens
-		used += last
+		used += spent(req, resp)
 		assistant := llm.Message{Role: llm.RoleAssistant, ToolCalls: resp.ToolCalls, Native: resp.Native}
 		if resp.Text != "" {
 			assistant.Parts = []llm.Part{llm.TextPart(resp.Text)}
@@ -124,7 +126,14 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 				return msgs[start:], errors.New("the reply hit the output limit in the middle of a tool call")
 			}
 		}
-		if len(resp.ToolCalls) == 0 {
+		if r.Final && len(resp.ToolCalls) > 0 {
+			assistant.ToolCalls, assistant.Native = nil, nil
+			msgs[len(msgs)-1] = assistant
+			if resp.Text == "" {
+				return msgs[start:], errors.New("the model tried to keep working instead of writing up its results")
+			}
+		}
+		if len(assistant.ToolCalls) == 0 {
 			return msgs[start:], nil
 		}
 		for _, call := range resp.ToolCalls {
@@ -146,36 +155,6 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 		}
 	}
 	return msgs[start:], ErrMaxSteps
-}
-
-// wrappingUp reports whether this step should be the run's last: the
-// final two steps, or when the budget can't cover two more steps like
-// the previous one. Asking for the answer then beats being cut off.
-func (r *Run) wrappingUp(step, maxSteps, used, last int) bool {
-	if step >= maxSteps-2 {
-		return true
-	}
-	return r.TokenBudget > 0 && (used+2*last >= r.TokenBudget || used >= r.TokenBudget*3/4)
-}
-
-// wrapUpNote is appended to the latest tool result when the run nears
-// its limits.
-const wrapUpNote = "\n\n[Pocket Agent: this task has almost used its step and token budget. Don't call more tools. " +
-	"Write your final answer now from what you have, and say briefly what is left undone, if anything.]"
-
-// withWrapUpNote returns msgs with wrapUpNote added to the last tool
-// result, which keeps the turn order every provider accepts. A run that
-// hasn't called a tool yet needs no note.
-func withWrapUpNote(msgs []llm.Message) []llm.Message {
-	n := len(msgs)
-	if n == 0 || msgs[n-1].Role != llm.RoleTool {
-		return msgs
-	}
-	out := append([]llm.Message(nil), msgs...)
-	m := out[n-1]
-	m.Parts = []llm.Part{llm.TextPart(m.Text() + wrapUpNote)}
-	out[n-1] = m
-	return out
 }
 
 func (r *Run) runTool(ctx context.Context, call llm.ToolCall) (tools.Result, bool) {
@@ -260,6 +239,29 @@ func chat(ctx context.Context, p llm.Provider, req llm.Request, onEvent func(llm
 // keepToolResults is how many of the latest tool results are sent in
 // full; older ones are trimmed.
 const keepToolResults = 6
+
+// spent is the tokens a step used: what the provider reported, or an
+// estimate of four characters a token when it reported nothing, so a
+// budget still holds with servers that leave usage out.
+func spent(req llm.Request, resp *llm.Response) int {
+	if n := resp.Usage.InputTokens + resp.Usage.OutputTokens; n > 0 {
+		return n
+	}
+	chars := len(req.System) + len(resp.Text)
+	for _, m := range req.Messages {
+		chars += len(m.Text())
+		for _, c := range m.ToolCalls {
+			chars += len(c.Args)
+		}
+	}
+	for _, c := range resp.ToolCalls {
+		chars += len(c.Args)
+	}
+	for _, t := range req.Tools {
+		chars += 200 + len(t.Description)
+	}
+	return chars / 4
+}
 
 // trimmedResult is how much of an older tool result is kept.
 const trimmedResult = 1500

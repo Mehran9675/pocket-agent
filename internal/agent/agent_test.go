@@ -155,40 +155,46 @@ func TestCompactToolResults(t *testing.T) {
 	}
 }
 
-// wrapProbe calls a tool every step and records whether it was asked to wrap up.
-type wrapProbe struct{ notes []bool }
+// toolThenText calls a tool along with its text.
+type toolThenText struct{ usage llm.Usage }
 
-func (s *wrapProbe) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
+func (s *toolThenText) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
 
-func (s *wrapProbe) Chat(_ context.Context, req llm.Request, _ func(llm.Event)) (*llm.Response, error) {
-	last := req.Messages[len(req.Messages)-1]
-	s.notes = append(s.notes, strings.Contains(last.Text(), "Write your final answer now"))
-	return &llm.Response{ToolCalls: []llm.ToolCall{{ID: fmt.Sprint("c", len(s.notes)), Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}},
-		StopReason: "tool_calls", Usage: llm.Usage{InputTokens: 100}}, nil
+func (s *toolThenText) Chat(context.Context, llm.Request, func(llm.Event)) (*llm.Response, error) {
+	return &llm.Response{Text: "Results so far.", StopReason: "tool_calls", Usage: s.usage,
+		ToolCalls: []llm.ToolCall{{ID: "c", Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}}}, nil
 }
 
-func TestRunAsksForAnswerBeforeLimits(t *testing.T) {
+func TestFinalRunDropsToolCalls(t *testing.T) {
 	calc, _ := tools.Builtin("calculator")
-	run := func(steps, budget int) []bool {
-		p := &wrapProbe{}
-		r := &Run{Provider: p, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: steps, TokenBudget: budget,
-			Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("go")}}}}
-		r.Execute(context.Background())
-		return p.notes
+	obs := &nopObserver{}
+	r := &Run{Provider: &toolThenText{}, Model: "m", Tools: tools.NewSet(calc), Observer: obs, Final: true,
+		Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("wrap up")}}}}
+	out, err := r.Execute(context.Background())
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got := fmt.Sprint(run(5, 0)); got != "[false false false true true]" {
-		t.Fatalf("steps: %s", got)
+	if len(out) != 1 || len(out[0].ToolCalls) != 0 || out[0].Text() != "Results so far." || len(obs.results) != 0 {
+		t.Fatalf("out=%+v results=%+v", out, obs.results)
 	}
-	// 1000 tokens at 100 a step: from 750 used it asks.
-	if got := fmt.Sprint(run(20, 1000)); got != "[false false false false false false false false true true]" {
-		t.Fatalf("budget: %s", got)
+}
+
+func TestBudgetHoldsWithoutReportedUsage(t *testing.T) {
+	calc, _ := tools.Builtin("calculator")
+	big := strings.Repeat("x", 40000) // about 10k tokens a step
+	r := &Run{Provider: &toolThenText{}, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: 50, TokenBudget: 30000,
+		Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart(big)}}}}
+	out, err := r.Execute(context.Background())
+	if !errors.Is(err, ErrTokenBudget) || len(out) > 8 {
+		t.Fatalf("err=%v after %d messages", err, len(out))
 	}
 }
 
 func TestSystemPromptListsSkillsAndLimits(t *testing.T) {
 	p := SystemPrompt(SystemPromptInput{Mode: store.ModeAgent, MaxSteps: 30, TokenBudget: 500000,
 		Skills: [][2]string{{"pdf", "Use for PDFs."}}})
-	for _, want := range []string{"- pdf: Use for PDFs.", "call use_skill", "at most 30 steps", "about 500k tokens"} {
+	p += SystemPrompt(SystemPromptInput{Mode: store.ModeAgent, CanPlan: true})
+	for _, want := range []string{"- pdf: Use for PDFs.", "call use_skill", "at most 30 steps", "about 500k tokens", "call update_plan"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt lacks %q:\n%s", want, p)
 		}

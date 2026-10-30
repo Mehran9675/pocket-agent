@@ -194,7 +194,10 @@ func (p *Anthropic) Chat(ctx context.Context, req Request, onEvent func(Event)) 
 			col.toolCall(ToolCall{ID: tu.ID, Name: tu.Name, Args: json.RawMessage(tu.JSON.Input.Raw())})
 		}
 	}
-	col.resp.Usage = Usage{InputTokens: int(msg.Usage.InputTokens), OutputTokens: int(msg.Usage.OutputTokens)}
+	// Cached prompt tokens are still read by the model and count
+	// against budgets.
+	in := msg.Usage.InputTokens + msg.Usage.CacheReadInputTokens + msg.Usage.CacheCreationInputTokens
+	col.resp.Usage = Usage{InputTokens: int(in), OutputTokens: int(msg.Usage.OutputTokens)}
 	switch msg.StopReason {
 	case anthropic.StopReasonToolUse:
 		col.resp.StopReason = "tool_calls"

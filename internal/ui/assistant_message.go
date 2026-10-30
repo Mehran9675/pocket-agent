@@ -85,7 +85,9 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 				widgets.Icon(icon, 18, color),
 				giode.Box(widgets.St{FlexGrow: 1}, widgets.Text(m.Error, theme.SizeCallout, theme.T.Text)),
 				widgets.When(last && !running && m.Paused, func() widgets.El {
-					return widgets.Button("continue/"+m.ID, "Continue", "play", widgets.BtnPrimary, func() { a.send("Continue where you left off.", nil) })
+					return widgets.Col(widgets.St{Gap: 8},
+						widgets.Button("continue/"+m.ID, "Continue", "play", widgets.BtnPrimary, func() { a.send("Continue where you left off.", nil) }),
+						widgets.Button("wrapup/"+m.ID, "Wrap up", "check", widgets.BtnSecondary, func() { a.wrapUp(c) }))
 				}),
 				widgets.When(last && !running && !m.Paused, func() widgets.El {
 					return widgets.Button("retry/"+m.ID, "Retry", "rotate-ccw", widgets.BtnSecondary, func() { a.regenerate(c) })

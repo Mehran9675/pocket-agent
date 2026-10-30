@@ -223,7 +223,10 @@ type Message struct {
 	Stopped bool      `json:"stopped,omitempty"`
 	// Paused is set when an agent stopped at a limit (steps or tokens)
 	// and can pick up where it left off.
-	Paused   bool             `json:"paused,omitempty"`
+	Paused bool `json:"paused,omitempty"`
+	// WrapUp marks a user message asking a paused agent for its results
+	// now; the turn it starts may not call tools.
+	WrapUp   bool             `json:"wrapUp,omitempty"`
 	Plan     []tools.PlanItem `json:"plan,omitempty"`
 	Research *Research        `json:"research,omitempty"`
 	Duration time.Duration    `json:"duration,omitempty"`

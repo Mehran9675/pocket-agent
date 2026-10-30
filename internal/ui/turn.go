@@ -54,6 +54,27 @@ func (a *App) send(text string, atts []store.Attachment) {
 	a.startTurn(c)
 }
 
+// wrapUpPrompt asks a paused agent for its results.
+const wrapUpPrompt = "Stop here and write up your results now from what you have so far. Don't call any more tools; say briefly what is left undone."
+
+// wrapUp asks the paused agent in c to finish with what it has.
+func (a *App) wrapUp(c *store.Conversation) {
+	if a.isRunning(c) {
+		return
+	}
+	c.Messages = append(c.Messages, &store.Message{
+		ID: store.NewID(), Role: llm.RoleUser, Created: time.Now(), Text: wrapUpPrompt, WrapUp: true,
+	})
+	c.Touch()
+	a.chat.jumpToBottom = true
+	a.startTurn(c)
+}
+
+func hasTool(set *tools.Set, name string) bool {
+	_, ok := set.Get(name)
+	return ok
+}
+
 // startTurn appends an assistant message and runs the model for c.
 func (a *App) startTurn(c *store.Conversation) {
 	ref := c.Model
@@ -158,6 +179,7 @@ func (a *App) startTurn(c *store.Conversation) {
 			MaxSteps:     maxSteps,
 			TokenBudget:  ag.Budget(),
 			Skills:       a.skillIndex(set, info.Tools),
+			CanPlan:      info.Tools && hasTool(set, "update_plan"),
 		})
 		if !info.Tools {
 			set = tools.NewSet()
@@ -180,6 +202,9 @@ func (a *App) startTurn(c *store.Conversation) {
 		}
 		if ref.Provider == store.LocalProviderID {
 			run.MaxTokens = a.settings.Local.MaxTokens
+		}
+		if n := len(c.Messages); n >= 2 && c.Messages[n-2].WrapUp {
+			run.Final = true
 		}
 		go func() {
 			_, err := run.Execute(ctx)
@@ -205,10 +230,10 @@ func (a *App) finishTurn(c *store.Conversation, msg *store.Message, rs *runState
 	case errors.Is(err, context.Canceled):
 		msg.Stopped = true
 	case errors.Is(err, agent.ErrMaxSteps):
-		msg.Error = "The agent paused after reaching its step limit."
+		msg.Error = "The agent paused after reaching its step limit. Continue to let it keep working, or wrap up to get its results now."
 		msg.Paused = true
 	case errors.Is(err, agent.ErrTokenBudget):
-		msg.Error = fmt.Sprintf("The agent paused after using %s tokens, its budget for one task.", compactNum(msg.Usage.InputTokens+msg.Usage.OutputTokens))
+		msg.Error = fmt.Sprintf("The agent paused after using %s tokens, its budget for one task. Continue to give it another budget, or wrap up to get its results now.", compactNum(msg.Usage.InputTokens+msg.Usage.OutputTokens))
 		msg.Paused = true
 	default:
 		msg.Error = agent.FriendlyError(err)

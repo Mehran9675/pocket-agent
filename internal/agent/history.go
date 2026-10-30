@@ -152,6 +152,8 @@ type SystemPromptInput struct {
 	// model can pace itself; 0 leaves them out.
 	MaxSteps    int
 	TokenBudget int
+	// CanPlan is set when update_plan is offered.
+	CanPlan bool
 	// Skills are the enabled skills, each a name and when to use it.
 	Skills [][2]string
 }
@@ -179,7 +181,12 @@ func SystemPrompt(in SystemPromptInput) string {
 		if len(in.Workspace) > 0 {
 			b.WriteString(" Current workspace files: " + strings.Join(in.Workspace, ", ") + ".")
 		}
-		b.WriteString("\n\nWork efficiently: do only what the task needs, scale the effort to how big the request is, " +
+		if in.CanPlan {
+			b.WriteString("\n\nBefore any other tool, call update_plan with a short plan sized to the task - two to six steps, " +
+				"each a concrete action - then carry it out step by step, marking each done as you finish it. " +
+				"Stick to the plan; change it only when you learn something that makes it wrong, never to add nice-to-haves.")
+		}
+		b.WriteString("\n\nWork with restraint: do only what the task needs, scale the effort to how big the request is, " +
 			"don't repeat a search or fetch you already made, and give the answer as soon as you have enough to do it well. " +
 			"A simple question needs a few tool calls at most.")
 		if in.MaxSteps > 0 {
@@ -187,7 +194,7 @@ func SystemPrompt(in SystemPromptInput) string {
 			if in.TokenBudget > 0 {
 				fmt.Fprintf(&b, " and about %dk tokens (each step resends the conversation)", in.TokenBudget/1000)
 			}
-			b.WriteString("; plan to finish well within them.")
+			b.WriteString("; plan to finish well within them. If you reach a limit, the user decides whether you continue or write up what you have.")
 		}
 	}
 	if len(in.Skills) > 0 {
