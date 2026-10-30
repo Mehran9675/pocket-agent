@@ -55,6 +55,12 @@ dozens of sources and writes a cited report. Written in Go with
 - **Skills**: install SKILL.md skills from a file, a .zip or a link (GitHub folders included), or
   write your own, and turn them on or off in Settings. Models see each skill's description and
   load its instructions and files when a task calls for them.
+- **25 languages**: English plus Bulgarian, Croatian, Czech, Danish, Dutch, Estonian, Finnish,
+  French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese,
+  Romanian, Russian, Slovak, Slovenian, Spanish, Swedish and Ukrainian, following the system
+  language or chosen in Settings. Translations live in `locales/`, keyed by the English text;
+  `UPDATE_LOCALES=1 go test ./internal/ui -run TestEnglishMessages` refreshes `en.json` after
+  UI text changes, and `TestTranslations` reports what each language is missing.
 - A full-screen editor for long messages; folders for conversations (one level).
 - Regenerate, edit and resend, copy, share, export to Markdown, rename, pin, search, per-chat
   system prompt, automatic titles, token, tokens-per-second and time stats.

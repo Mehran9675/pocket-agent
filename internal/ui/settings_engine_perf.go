@@ -57,7 +57,7 @@ func (a *App) enginePerfBody() widgets.El {
 	}
 	return widgets.Col(widgets.St{Gap: 16, Width: -1},
 		widgets.Text(tr("Changes apply the next time a model loads. Defaults suit most phones; these are for squeezing in a larger model or context, or more speed."), theme.SizeFootnote, theme.T.Muted),
-		widgets.SectionLabel(tr("Memory")),
+		widgets.SectionLabel(tr("RAM")),
 		widgets.Card(widgets.St{Gap: 16},
 			widgets.SelectRow("perf/k", tr("K cache type"), "", kvLabels, indexOr(kvTypes, lo.CacheTypeK, 0), func(i int) {
 				lo.CacheTypeK = kvTypes[i]

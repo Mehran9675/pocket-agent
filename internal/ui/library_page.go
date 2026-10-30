@@ -32,7 +32,7 @@ func (a *App) libraryBody() widgets.El {
 				widgets.Text(tr("Private by design"), theme.SizeHeadline, theme.T.Text, giode.FontWeightSemiBold),
 				widgets.Text(ifStr(isMobile(), tr("On-device models run entirely on this device. Nothing you type leaves it, and they work offline."), tr("On-device models run entirely on this computer. Nothing you type leaves it, and they work offline.")), theme.SizeFootnote, theme.T.Text2))),
 		widgets.Row(widgets.St{Gap: 16},
-			stat(tr("Memory"), ram), stat(tr("Engine"), a.engineLabel()),
+			stat(tr("RAM"), ram), stat(tr("Engine"), a.engineLabel()),
 			stat(tr("Installed"), fmt.Sprint(len(a.models.Installed())))),
 	)
 	kids = append(kids, header)
