@@ -153,7 +153,7 @@ func TestEnglishMessages(t *testing.T) {
 	}
 }
 
-var placeholderRE = regexp.MustCompile(`\{[a-z]+\}|%[-+ #0]*[0-9]*(\.[0-9]+)?[a-z%]`)
+var placeholderRE = regexp.MustCompile(`\{[a-z]+\}|%[-+#0]*[0-9]*(\.[0-9]+)?[a-z%]`)
 
 func placeholders(s string) string {
 	ps := placeholderRE.FindAllString(s, -1)

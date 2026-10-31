@@ -24,19 +24,21 @@ func summaryFrom(c *store.Conversation) (int, string) {
 }
 
 // compressionLimit is the context size, in tokens, past which earlier
-// messages are summarized; 0 when compression is off. On-device models
-// compress before their context window fills.
+// messages are summarized; 0 when compression is off. Cloud and
+// on-device models have their own limits.
 func (a *App) compressionLimit(ref store.ModelRef) int {
-	if !a.settings.Compression.Enabled {
+	cfg := a.settings.Compression
+	if !cfg.Enabled {
 		return 0
 	}
-	n := a.settings.Compression.Tokens()
-	if ref.Provider == store.LocalProviderID && a.engine != nil {
-		if w := a.engine.ContextSize(); w > 0 {
-			n = min(n, w*6/10)
+	if ref.Provider == store.LocalProviderID {
+		window := 0
+		if a.engine != nil {
+			window = a.engine.ContextSize()
 		}
+		return cfg.Local(window)
 	}
-	return n
+	return cfg.Cloud()
 }
 
 // keptFrom is the index of the first message kept word for word when

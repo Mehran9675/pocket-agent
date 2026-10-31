@@ -211,6 +211,11 @@ func (a *App) startTurn(c *store.Conversation) {
 		}
 		limit := a.compressionLimit(ref)
 		run.CompressAt = limit
+		// Within a task every step resends the context, so agents
+		// condense earlier, keeping a budget good for several steps.
+		if b := ag.Budget(); limit > 0 && c.Mode == store.ModeAgent && b > 0 {
+			run.CompressAt = min(limit, max(b/8, 16000))
+		}
 		msgs := append([]*store.Message(nil), c.Messages[:len(c.Messages)-1]...)
 		go func() {
 			run.Messages, sysIn.Summary = a.compressHistory(ctx, c, msg, prov, ref.Model, info.Vision, msgs, from, summary, prompts, limit, obs)

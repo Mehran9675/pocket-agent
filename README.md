@@ -57,7 +57,7 @@ dozens of sources and writes a cited report. Written in Go with
   load its instructions and files when a task calls for them.
 - **System prompts** for chat, agent mode, each deep-research stage and compression can be
   rewritten in Settings, and reset to their defaults.
-- **Context compression** (switchable, with a configurable limit): once a conversation's context
+- **Context compression** (switchable, with separate limits for cloud and on-device models): once a conversation's context
   passes the limit, earlier messages are summarized and the summary is sent in their place.
   Agents condense their own earlier steps the same way during long tasks, see their progress
   against the step and token limits after every step, and pause at a limit for you to continue

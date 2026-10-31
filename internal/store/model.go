@@ -404,7 +404,7 @@ func DefaultSettings() *Settings {
 		Search:        tools.SearchConfig{Engine: tools.SearchDuckDuckGo},
 		ChatTools:     []string{"calculator", "current_datetime", "run_javascript", "read_attachment", "remember", "forget"},
 		AutoApprove:   map[string]bool{},
-		Compression:   Compression{Enabled: true, Limit: DefaultCompressionLimit},
+		Compression:   Compression{Enabled: true, CloudLimit: DefaultCloudLimit},
 		MemoryEnabled: true,
 		ShowReasoning: true,
 		Local:         LocalSettings{ContextSize: 4096, GPULayers: -1, Temperature: 0.7, MaxTokens: 2048, Sampling: local.DefaultGenParams()},
@@ -475,19 +475,37 @@ func (s *Settings) Folder(id string) *Folder {
 // Compression configures summarizing long contexts.
 type Compression struct {
 	Enabled bool `json:"enabled"`
-	// Limit is the context size, in thousands of tokens, past which
-	// earlier messages are summarized.
-	Limit int `json:"limit"`
+	// CloudLimit is the context size, in thousands of tokens, past
+	// which earlier messages are summarized for cloud models.
+	CloudLimit int `json:"cloudLimit"`
+	// LocalLimit is the same for on-device models; 0 is automatic: a
+	// share of the loaded model's context window.
+	LocalLimit int `json:"localLimit,omitempty"`
 }
 
-// DefaultCompressionLimit is the limit, in thousands of tokens, new
+// DefaultCloudLimit is the cloud limit, in thousands of tokens, new
 // installs start with.
-const DefaultCompressionLimit = 32
+const DefaultCloudLimit = 128
 
-// Tokens is the limit in tokens.
-func (c Compression) Tokens() int {
-	if c.Limit <= 0 {
-		return DefaultCompressionLimit * 1000
+// Cloud is the cloud limit in tokens.
+func (c Compression) Cloud() int {
+	if c.CloudLimit <= 0 {
+		return DefaultCloudLimit * 1000
 	}
-	return c.Limit * 1000
+	return c.CloudLimit * 1000
+}
+
+// Local is the on-device limit in tokens for a model with a context
+// window of window tokens (0 when unknown). It never passes 60% of the
+// window, which leaves room for the reply.
+func (c Compression) Local(window int) int {
+	auto := window * 6 / 10
+	n := c.LocalLimit * 1000
+	switch {
+	case window <= 0:
+		return max(n, 4000)
+	case n <= 0 || n > auto:
+		return auto
+	}
+	return n
 }

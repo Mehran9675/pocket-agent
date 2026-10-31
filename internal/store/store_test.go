@@ -88,3 +88,18 @@ func TestDropPresetAddresses(t *testing.T) {
 		t.Fatalf("addresses: %q %q %q", st.Providers[0].BaseURL, st.Providers[1].BaseURL, st.Providers[2].BaseURL)
 	}
 }
+
+func TestCompressionLimits(t *testing.T) {
+	c := Compression{Enabled: true}
+	if c.Cloud() != 128000 || c.Local(8192) != 4915 || c.Local(0) != 4000 {
+		t.Fatalf("defaults: %d %d %d", c.Cloud(), c.Local(8192), c.Local(0))
+	}
+	c.LocalLimit = 2
+	if c.Local(8192) != 2000 {
+		t.Fatal(c.Local(8192))
+	}
+	c.LocalLimit = 32 // past the window's share
+	if c.Local(8192) != 4915 {
+		t.Fatal(c.Local(8192))
+	}
+}
