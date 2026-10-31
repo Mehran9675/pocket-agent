@@ -99,7 +99,6 @@ func (a *App) startTurn(c *store.Conversation) {
 	a.runStarted(ref)
 	a.st.SaveConversation(c)
 
-	history := agent.BuildHistory(a.st, c.Messages[:len(c.Messages)-1], info.Vision)
 	obs := &observer{a: a, c: c, m: msg, rs: rs}
 	thinking := c.Thinking
 	if !a.modelThinks(ref) {
@@ -131,6 +130,7 @@ func (a *App) startTurn(c *store.Conversation) {
 			Provider: prov, Model: ref.Model, Question: question, Context: prior.String(),
 			Depth: c.Depth, Search: a.settings.Search, Observer: obs,
 			Small: ref.Provider == store.LocalProviderID, Thinking: thinking,
+			Prompts: agent.Prompts(a.settings.Prompts),
 		}
 		go func() {
 			err := r.Run(ctx)
@@ -166,7 +166,9 @@ func (a *App) startTurn(c *store.Conversation) {
 		if ag != nil {
 			maxSteps = ag.MaxSteps
 		}
-		system := agent.SystemPrompt(agent.SystemPromptInput{
+		prompts := agent.Prompts(a.settings.Prompts)
+		from, summary := summaryFrom(c)
+		sysIn := agent.SystemPromptInput{
 			Instructions: a.settings.Instructions,
 			Override:     c.System,
 			Memory:       memory,
@@ -179,17 +181,18 @@ func (a *App) startTurn(c *store.Conversation) {
 			MaxSteps:     maxSteps,
 			TokenBudget:  ag.Budget(),
 			Skills:       a.skillIndex(set, info.Tools),
-			CanPlan:      info.Tools && hasTool(set, "update_plan"),
-		})
+			Prompts:      prompts,
+		}
 		if !info.Tools {
 			set = tools.NewSet()
 		}
 		run := &agent.Run{
-			Provider: prov, Model: ref.Model, System: system, Messages: history,
+			Provider: prov, Model: ref.Model,
 			Tools: set, Env: env, MaxSteps: maxSteps, TokenBudget: ag.Budget(),
 			Reasoning: a.settings.ShowReasoning && info.Reasoning,
 			Thinking:  thinking,
 			Observer:  obs,
+			Prompts:   prompts,
 			NeedsApproval: func(t *tools.Tool) bool {
 				if !t.Approval || a.settings.AutoApprove[t.Name] {
 					return false
@@ -206,7 +209,12 @@ func (a *App) startTurn(c *store.Conversation) {
 		if n := len(c.Messages); n >= 2 && c.Messages[n-2].WrapUp {
 			run.Final = true
 		}
+		limit := a.compressionLimit(ref)
+		run.CompressAt = limit
+		msgs := append([]*store.Message(nil), c.Messages[:len(c.Messages)-1]...)
 		go func() {
+			run.Messages, sysIn.Summary = a.compressHistory(ctx, c, msg, prov, ref.Model, info.Vision, msgs, from, summary, prompts, limit, obs)
+			run.System = agent.SystemPrompt(sysIn)
 			_, err := run.Execute(ctx)
 			a.Post(func() { a.finishTurn(c, msg, rs, err, started, firstTurn, prov, ref) })
 		}()

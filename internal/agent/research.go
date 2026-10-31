@@ -39,6 +39,8 @@ type Research struct {
 	// Thinking sets how much a reasoning model thinks on each call.
 	Thinking llm.Thinking
 	Observer ResearchObserver
+	// Prompts are the user's rewritten system prompts.
+	Prompts Prompts
 
 	mu     sync.Mutex
 	notes  []note
@@ -139,7 +141,7 @@ func (r *Research) Run(ctx context.Context) error {
 	if r.Context != "" {
 		ctxNote = "\n\nEarlier conversation, for context:\n" + r.Context
 	}
-	raw, err := r.complete(ctx, "You plan web research. Today is "+today+". Reply with JSON only.",
+	raw, err := r.complete(ctx, r.Prompts.Get(PromptResearchPlan)+" Today is "+today+".",
 		fmt.Sprintf(`Research request: %s%s
 
 Break it into %d focused sub-questions that together answer it thoroughly, each with a web search query (concise, keyword style, include years for time-sensitive topics).
@@ -297,7 +299,7 @@ func (r *Research) investigate(ctx context.Context, question, query string, page
 			if rr := []rune(text); len(rr) > limit {
 				text = string(rr[:limit])
 			}
-			extracted, err := r.complete(ctx, "You extract research notes from web pages. Be faithful to the source; never add outside knowledge.",
+			extracted, err := r.complete(ctx, r.Prompts.Get(PromptResearchExtract),
 				fmt.Sprintf("Question: %s\n\nSource: %s (%s)\n\n<page>\n%s\n</page>\n\n"+
 					"Write the facts, figures, dates, names and short quotes from this page that help answer the question, as terse bullet points (at most 12). "+
 					"Note the publication date if visible. If nothing is relevant, reply exactly NONE.", question, title, src.URL, text), 900)
@@ -341,7 +343,7 @@ func (r *Research) notesText(maxPer int) string {
 }
 
 func (r *Research) reflect(ctx context.Context, goal string, n int) (plan, error) {
-	raw, err := r.complete(ctx, "You review research progress. Reply with JSON only.",
+	raw, err := r.complete(ctx, r.Prompts.Get(PromptResearchReview),
 		fmt.Sprintf(`Goal: %s
 
 Notes so far:
@@ -394,7 +396,7 @@ Write %s in Markdown that answers the request:
 Use only the notes; say so where the evidence is thin.`, r.Question, goal, srcs.String(), r.notesText(0), length)
 	resp, err := chat(ctx, r.Provider, llm.Request{
 		Model:     r.Model,
-		System:    "You are an expert research analyst writing for a smart, busy reader. Today is " + time.Now().Format("2 January 2006") + ".",
+		System:    r.Prompts.Get(PromptResearchWrite) + " Today is " + time.Now().Format("2 January 2006") + ".",
 		Messages:  []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart(prompt)}}},
 		MaxTokens: maxTokens,
 		Thinking:  r.Thinking,

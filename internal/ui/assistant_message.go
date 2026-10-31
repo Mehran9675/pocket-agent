@@ -25,6 +25,12 @@ func (a *App) assistantRows(c *store.Conversation, m *store.Message, last bool) 
 	add := func(key, token string, build func() widgets.El) {
 		addText(key, token, func() widgets.El { return widgets.Unselectable(build()) })
 	}
+	if m.Compacted {
+		add("compacted", state, func() widgets.El {
+			return widgets.Row(widgets.St{Gap: 6}, widgets.Icon("layers", 13, theme.T.Faint),
+				widgets.Text(tr("Earlier messages were summarized to save context"), theme.SizeFootnote, theme.T.Faint))
+		})
+	}
 	if m.Research != nil {
 		add("research", state, func() widgets.El { return a.researchCard(m) })
 	}

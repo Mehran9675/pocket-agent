@@ -48,6 +48,13 @@ type Run struct {
 	// Approve decides whether a tool needing approval may run; it may
 	// block (waiting for the user). Nil approves everything.
 	Approve func(ctx context.Context, call llm.ToolCall, tool *tools.Tool) bool
+	// CompressAt condenses the run's earlier steps into notes when a
+	// request would pass this many tokens; 0 never does.
+	CompressAt int
+	// Prompts are the user's rewritten system prompts.
+	Prompts Prompts
+	// taskParts is the task message before notes were added to it.
+	taskParts []llm.Part
 	// Final asks for the answer in one step: tool calls in the reply
 	// are dropped instead of run.
 	Final bool
@@ -90,6 +97,12 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 			return msgs[start:], ErrTokenBudget
 		}
 		r.Observer.StepStart(step)
+		if r.CompressAt > 0 && EstimateTokens(r.System, CompactToolResults(msgs, keepToolResults)) > r.CompressAt {
+			if out, u, ok := r.compress(ctx, msgs, start); ok {
+				msgs = out // the task stays at start-1, so start holds
+				used += u
+			}
+		}
 		req := llm.Request{
 			Model:     r.Model,
 			System:    r.System,
@@ -153,6 +166,10 @@ func (r *Run) Execute(ctx context.Context) ([]llm.Message, error) {
 				IsError:    res.IsError || !ran,
 			})
 		}
+		// The model sees its progress against the limits, so it can
+		// pace itself and wrap up before it runs out.
+		last := &msgs[len(msgs)-1]
+		last.Parts = []llm.Part{llm.TextPart(last.Text() + r.progress(step+1, maxSteps, used))}
 	}
 	return msgs[start:], ErrMaxSteps
 }
@@ -238,7 +255,54 @@ func chat(ctx context.Context, p llm.Provider, req llm.Request, onEvent func(llm
 
 // keepToolResults is how many of the latest tool results are sent in
 // full; older ones are trimmed.
-const keepToolResults = 6
+const keepToolResults = 4
+
+// progress is the note after each step's tool results.
+func (r *Run) progress(steps, maxSteps, used int) string {
+	note := fmt.Sprintf("\n\n[Progress: step %d of %d", steps, maxSteps)
+	share := float64(steps) / float64(maxSteps)
+	if r.TokenBudget > 0 {
+		note += fmt.Sprintf(", about %dk of %dk tokens used", (used+500)/1000, r.TokenBudget/1000)
+		share = max(share, float64(used)/float64(r.TokenBudget))
+	}
+	switch {
+	case share >= 0.85:
+		note += ". Nearly out: no more research - write up your answer now from what you have."
+	case share >= 0.6:
+		note += ". Start wrapping up: no new lines of inquiry; finish the remaining plan steps with what you have."
+	}
+	return note + "]"
+}
+
+// compress condenses the run's steps before the latest into notes added
+// to the task's message. Each step resends everything before it, so
+// this keeps long runs from growing without bound. It reports the
+// tokens the summary took and whether it changed msgs.
+func (r *Run) compress(ctx context.Context, msgs []llm.Message, start int) ([]llm.Message, int, bool) {
+	// Keep the latest step - the last assistant turn and its results.
+	cut := -1
+	for i := len(msgs) - 1; i >= start; i-- {
+		if msgs[i].Role == llm.RoleAssistant {
+			cut = i
+			break
+		}
+	}
+	task := start - 1
+	if cut-start < 2 || task < 0 || msgs[task].Role != llm.RoleUser {
+		return msgs, 0, false
+	}
+	sum, u, err := Summarize(ctx, r.Provider, r.Model, r.Prompts.Get(PromptSummary), "", msgs[task:cut], llm.ThinkingAuto)
+	if err != nil {
+		return msgs, 0, false
+	}
+	t := msgs[task]
+	if r.taskParts == nil {
+		r.taskParts = t.Parts
+	}
+	t.Parts = append(append([]llm.Part(nil), r.taskParts...), llm.TextPart("\n\n[Your earlier steps on this task were condensed to save context. Your notes so far:]\n"+sum))
+	out := append(append(append([]llm.Message(nil), msgs[:task]...), t), msgs[cut:]...)
+	return out, u.InputTokens + u.OutputTokens, true
+}
 
 // spent is the tokens a step used: what the provider reported, or an
 // estimate of four characters a token when it reported nothing, so a
@@ -264,7 +328,7 @@ func spent(req llm.Request, resp *llm.Response) int {
 }
 
 // trimmedResult is how much of an older tool result is kept.
-const trimmedResult = 1500
+const trimmedResult = 1000
 
 // CompactToolResults returns msgs with all but the last keep tool
 // results cut to an excerpt. Every step resends the whole conversation,

@@ -25,7 +25,7 @@ func (s *scripted) Chat(_ context.Context, req llm.Request, on func(llm.Event)) 
 		return &llm.Response{ToolCalls: []llm.ToolCall{{ID: "c1", Name: "calculator", Args: json.RawMessage(`{"expression":"6*7"}`)}}, StopReason: "tool_calls"}, nil
 	}
 	last := req.Messages[len(req.Messages)-1]
-	if last.Role != llm.RoleTool || last.Text() != "6*7 = 42" {
+	if last.Role != llm.RoleTool || !strings.HasPrefix(last.Text(), "6*7 = 42\n\n[Progress: step 1 of 12") {
 		return nil, context.DeadlineExceeded
 	}
 	on(llm.Event{Kind: llm.EventText, Text: "42"})
@@ -193,10 +193,60 @@ func TestBudgetHoldsWithoutReportedUsage(t *testing.T) {
 func TestSystemPromptListsSkillsAndLimits(t *testing.T) {
 	p := SystemPrompt(SystemPromptInput{Mode: store.ModeAgent, MaxSteps: 30, TokenBudget: 500000,
 		Skills: [][2]string{{"pdf", "Use for PDFs."}}})
-	p += SystemPrompt(SystemPromptInput{Mode: store.ModeAgent, CanPlan: true})
+	p += SystemPrompt(SystemPromptInput{Mode: store.ModeAgent})
 	for _, want := range []string{"- pdf: Use for PDFs.", "call use_skill", "at most 30 steps", "about 500k tokens", "call update_plan"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt lacks %q:\n%s", want, p)
 		}
+	}
+}
+
+// recorder calls the calculator a few times, then answers, recording
+// every request; summary requests (no tools) get a fixed summary.
+type recorder struct {
+	reqs  []llm.Request
+	steps int
+}
+
+func (s *recorder) Models(context.Context) ([]llm.ModelInfo, error) { return nil, nil }
+
+func (s *recorder) Chat(_ context.Context, req llm.Request, _ func(llm.Event)) (*llm.Response, error) {
+	s.reqs = append(s.reqs, req)
+	if len(req.Tools) == 0 {
+		return &llm.Response{Text: "- searched three things", StopReason: "stop"}, nil
+	}
+	s.steps++
+	if s.steps > 4 {
+		return &llm.Response{Text: "done", StopReason: "stop"}, nil
+	}
+	return &llm.Response{StopReason: "tool_calls", Usage: llm.Usage{InputTokens: 100},
+		ToolCalls: []llm.ToolCall{{ID: fmt.Sprint("c", s.steps), Name: "calculator", Args: json.RawMessage(`{"expression":"1+1"}`)}}}, nil
+}
+
+func TestRunCompressesEarlierSteps(t *testing.T) {
+	calc, _ := tools.Builtin("calculator")
+	p := &recorder{}
+	r := &Run{Provider: p, Model: "m", Tools: tools.NewSet(calc), Observer: &nopObserver{}, MaxSteps: 10, CompressAt: 1,
+		Messages: []llm.Message{{Role: llm.RoleUser, Parts: []llm.Part{llm.TextPart("task")}}}}
+	if _, err := r.Execute(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	last := p.reqs[len(p.reqs)-1]
+	// The task, its notes, then only the latest step.
+	if len(last.Messages) != 3 || strings.Count(last.Messages[0].Text(), "Your notes so far") != 1 {
+		t.Fatalf("last request: %+v", last.Messages)
+	}
+}
+
+func TestProgressAsksToWrapUp(t *testing.T) {
+	r := &Run{TokenBudget: 100000}
+	if p := r.progress(2, 30, 10000); strings.Contains(p, "wrap") || !strings.Contains(p, "step 2 of 30, about 10k of 100k tokens used") {
+		t.Fatal(p)
+	}
+	if p := r.progress(2, 30, 65000); !strings.Contains(p, "Start wrapping up") {
+		t.Fatal(p)
+	}
+	if p := r.progress(28, 30, 1000); !strings.Contains(p, "Nearly out") {
+		t.Fatal(p)
 	}
 }

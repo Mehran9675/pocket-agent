@@ -55,6 +55,13 @@ dozens of sources and writes a cited report. Written in Go with
 - **Skills**: install SKILL.md skills from a file, a .zip or a link (GitHub folders included), or
   write your own, and turn them on or off in Settings. Models see each skill's description and
   load its instructions and files when a task calls for them.
+- **System prompts** for chat, agent mode, each deep-research stage and compression can be
+  rewritten in Settings, and reset to their defaults.
+- **Context compression** (switchable, with a configurable limit): once a conversation's context
+  passes the limit, earlier messages are summarized and the summary is sent in their place.
+  Agents condense their own earlier steps the same way during long tasks, see their progress
+  against the step and token limits after every step, and pause at a limit for you to continue
+  or have them wrap up.
 - **25 languages**: English plus Bulgarian, Croatian, Czech, Danish, Dutch, Estonian, Finnish,
   French, German, Greek, Hungarian, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese,
   Romanian, Russian, Slovak, Slovenian, Spanish, Swedish and Ukrainian, following the system

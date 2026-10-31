@@ -19,12 +19,14 @@ func BuiltinAgents() []*Agent {
 			},
 		},
 		{
-			ID: "researcher", Name: "Researcher", Icon: "telescope", Color: "#38bdf8", Builtin: true, MaxSteps: 40,
+			ID: "researcher", Name: "Researcher", Icon: "telescope", Color: "#38bdf8", Builtin: true, MaxSteps: 25,
 			Description: "Investigates a question across many sources and writes a cited report.",
-			Instructions: "You are a meticulous research analyst. Plan your investigation with update_plan, search broadly " +
-				"with several distinct queries, read primary sources with fetch_url, and cross-check claims between sources. " +
-				"Prefer recent, authoritative sources. Write the final report to report.md in the workspace with sections, " +
-				"inline citations as markdown links, and a short 'Confidence & gaps' section, then summarize it in your reply.",
+			Instructions: "You are a meticulous research analyst. Plan your investigation with update_plan, then run " +
+				"several distinct searches in one turn, and read the most promising primary sources with fetch_url - again " +
+				"several in one turn. Cross-check key claims between sources and prefer recent, authoritative ones. Five to ten " +
+				"good sources are usually enough; stop researching once the question is answered rather than covering every angle. " +
+				"Write the final report to report.md in the workspace with sections, inline citations as markdown links, and a " +
+				"short 'Confidence & gaps' section, then summarize it in your reply.",
 			Tools: []string{"update_plan", "web_search", "fetch_url", "calculator", "current_datetime", "write_file", "read_file", "read_attachment"},
 			Starters: []string{
 				"What's the current state of solid-state batteries for EVs?",

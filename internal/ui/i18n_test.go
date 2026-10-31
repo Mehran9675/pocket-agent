@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mehran9675/pocket-agent/internal/agent"
 	"github.com/mehran9675/pocket-agent/internal/llm"
 	"github.com/mehran9675/pocket-agent/internal/local"
 	"github.com/mehran9675/pocket-agent/internal/store"
@@ -105,6 +106,10 @@ func uiKeys(t *testing.T) (plain, plural []string) {
 	}
 	for _, m := range local.Catalog {
 		addPlain(m.Description)
+	}
+	for _, d := range agent.PromptDefs {
+		addPlain(d.Title)
+		addPlain(d.Help)
 	}
 	for _, th := range []llm.Thinking{llm.ThinkingAuto, llm.ThinkingOff, llm.ThinkingLow, llm.ThinkingMedium, llm.ThinkingHigh} {
 		addPlain(th.Label())

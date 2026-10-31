@@ -24,6 +24,13 @@ func (a *App) settingsPage(sub string, compact bool) widgets.El {
 	case strings.HasPrefix(sub, "skill/"):
 		name := strings.TrimPrefix(sub, "skill/")
 		return a.pageScaffold("skill/"+name, skillPageTitle(name), compact, nil, func() widgets.El { return a.skillEditorBody(name) })
+	case sub == "prompts":
+		return a.pageScaffold("prompts", tr("System prompts"), compact, nil, a.promptsBody)
+	case strings.HasPrefix(sub, "prompt/"):
+		id := strings.TrimPrefix(sub, "prompt/")
+		return a.pageScaffold("prompt/"+id, promptTitle(id), compact, nil, func() widgets.El { return a.promptBody(id) })
+	case sub == "compression":
+		return a.pageScaffold("compression", tr("Context compression"), compact, nil, a.compressionBody)
 	case sub == "memory":
 		return a.pageScaffold("memory", tr("Memory"), compact, nil, a.memoryBody)
 	case sub == "instructions":

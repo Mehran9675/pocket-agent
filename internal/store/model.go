@@ -77,6 +77,10 @@ type Conversation struct {
 	// Folder is the ID of the folder the conversation is in, "" for
 	// none. Folders hold conversations only, one level deep.
 	Folder string `json:"folder,omitempty"`
+	// Summary condenses the messages up to and including the one with
+	// ID SummaryThrough; later turns send it in their place.
+	Summary        string `json:"summary,omitempty"`
+	SummaryThrough string `json:"summaryThrough,omitempty"`
 	// System overrides the default instructions for this thread.
 	System string `json:"system,omitempty"`
 	// WebSearch offers web tools in chat mode.
@@ -226,10 +230,12 @@ type Message struct {
 	Paused bool `json:"paused,omitempty"`
 	// WrapUp marks a user message asking a paused agent for its results
 	// now; the turn it starts may not call tools.
-	WrapUp   bool             `json:"wrapUp,omitempty"`
-	Plan     []tools.PlanItem `json:"plan,omitempty"`
-	Research *Research        `json:"research,omitempty"`
-	Duration time.Duration    `json:"duration,omitempty"`
+	WrapUp bool `json:"wrapUp,omitempty"`
+	// Compacted is set on a reply whose turn summarized earlier messages.
+	Compacted bool             `json:"compacted,omitempty"`
+	Plan      []tools.PlanItem `json:"plan,omitempty"`
+	Research  *Research        `json:"research,omitempty"`
+	Duration  time.Duration    `json:"duration,omitempty"`
 	// Streaming is set while a reply is being generated.
 	Streaming bool `json:"-"`
 	Version   int  `json:"-"`
@@ -382,6 +388,10 @@ type Settings struct {
 	// Onboarded is set once the welcome flow finished.
 	Onboarded bool    `json:"onboarded"`
 	FontScale float64 `json:"fontScale,omitempty"`
+	// Compression summarizes earlier context once it passes a limit.
+	Compression Compression `json:"compression"`
+	// Prompts are rewritten system prompts by ID; see agent.PromptDefs.
+	Prompts map[string]string `json:"prompts,omitempty"`
 	// Language is the UI locale, "" for the system's.
 	Language string `json:"language,omitempty"`
 }
@@ -394,6 +404,7 @@ func DefaultSettings() *Settings {
 		Search:        tools.SearchConfig{Engine: tools.SearchDuckDuckGo},
 		ChatTools:     []string{"calculator", "current_datetime", "run_javascript", "read_attachment", "remember", "forget"},
 		AutoApprove:   map[string]bool{},
+		Compression:   Compression{Enabled: true, Limit: DefaultCompressionLimit},
 		MemoryEnabled: true,
 		ShowReasoning: true,
 		Local:         LocalSettings{ContextSize: 4096, GPULayers: -1, Temperature: 0.7, MaxTokens: 2048, Sampling: local.DefaultGenParams()},
@@ -459,4 +470,24 @@ func (s *Settings) Folder(id string) *Folder {
 		}
 	}
 	return nil
+}
+
+// Compression configures summarizing long contexts.
+type Compression struct {
+	Enabled bool `json:"enabled"`
+	// Limit is the context size, in thousands of tokens, past which
+	// earlier messages are summarized.
+	Limit int `json:"limit"`
+}
+
+// DefaultCompressionLimit is the limit, in thousands of tokens, new
+// installs start with.
+const DefaultCompressionLimit = 32
+
+// Tokens is the limit in tokens.
+func (c Compression) Tokens() int {
+	if c.Limit <= 0 {
+		return DefaultCompressionLimit * 1000
+	}
+	return c.Limit * 1000
 }

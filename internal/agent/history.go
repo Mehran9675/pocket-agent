@@ -152,10 +152,12 @@ type SystemPromptInput struct {
 	// model can pace itself; 0 leaves them out.
 	MaxSteps    int
 	TokenBudget int
-	// CanPlan is set when update_plan is offered.
-	CanPlan bool
 	// Skills are the enabled skills, each a name and when to use it.
 	Skills [][2]string
+	// Prompts are the user's rewritten system prompts.
+	Prompts Prompts
+	// Summary condenses the conversation before the messages sent.
+	Summary string
 }
 
 // SystemPrompt composes the system prompt for a turn.
@@ -167,34 +169,23 @@ func SystemPrompt(in SystemPromptInput) string {
 	} else if in.Agent != nil {
 		b.WriteString(in.Agent.Instructions)
 	} else {
-		b.WriteString("You are Pocket Agent, a capable, candid AI assistant running in a mobile app. ")
-		b.WriteString("Answer directly and precisely. Use Markdown - headings, lists, tables and fenced code blocks - when it aids readability; keep short answers short. ")
-		b.WriteString("The screen may be narrow: prefer compact tables and short paragraphs.")
+		b.WriteString(in.Prompts.Get(PromptChat))
 	}
 	fmt.Fprintf(&b, "\n\nCurrent date: %s.", now.Format("Monday, 2 January 2006, 15:04 MST"))
 	if in.WebSearch || in.Mode == store.ModeAgent {
 		b.WriteString(" Your training data has a cutoff; use web_search for anything that may have changed, and cite sources as markdown links.")
 	}
 	if in.Mode == store.ModeAgent {
-		b.WriteString("\n\nYou are running in agent mode: work autonomously through the task with your tools until it is done, " +
-			"without asking for confirmation at each step. Files you write go to a private workspace the user can open and share.")
+		b.WriteString("\n\n" + in.Prompts.Get(PromptAgent))
 		if len(in.Workspace) > 0 {
-			b.WriteString(" Current workspace files: " + strings.Join(in.Workspace, ", ") + ".")
+			b.WriteString("\n\nCurrent workspace files: " + strings.Join(in.Workspace, ", ") + ".")
 		}
-		if in.CanPlan {
-			b.WriteString("\n\nBefore any other tool, call update_plan with a short plan sized to the task - two to six steps, " +
-				"each a concrete action - then carry it out step by step, marking each done as you finish it. " +
-				"Stick to the plan; change it only when you learn something that makes it wrong, never to add nice-to-haves.")
-		}
-		b.WriteString("\n\nWork with restraint: do only what the task needs, scale the effort to how big the request is, " +
-			"don't repeat a search or fetch you already made, and give the answer as soon as you have enough to do it well. " +
-			"A simple question needs a few tool calls at most.")
 		if in.MaxSteps > 0 {
-			fmt.Fprintf(&b, " You have at most %d steps", in.MaxSteps)
+			fmt.Fprintf(&b, "\n\nLimits: at most %d steps", in.MaxSteps)
 			if in.TokenBudget > 0 {
-				fmt.Fprintf(&b, " and about %dk tokens (each step resends the conversation)", in.TokenBudget/1000)
+				fmt.Fprintf(&b, " and about %dk tokens", in.TokenBudget/1000)
 			}
-			b.WriteString("; plan to finish well within them. If you reach a limit, the user decides whether you continue or write up what you have.")
+			b.WriteString(" for this task; aim to finish well within them. If you reach a limit, the user decides whether you continue or write up what you have.")
 		}
 	}
 	if len(in.Skills) > 0 {
@@ -213,6 +204,9 @@ func SystemPrompt(in SystemPromptInput) string {
 			b.WriteString("- " + f + "\n")
 		}
 		b.WriteString("Use these naturally when relevant; don't recite them.")
+	}
+	if in.Summary != "" {
+		b.WriteString("\n\n# Earlier in this conversation\nThe start of this conversation was condensed to save context:\n" + in.Summary)
 	}
 	return b.String()
 }

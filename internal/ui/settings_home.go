@@ -58,6 +58,8 @@ func (a *App) settingsHome() widgets.El {
 		)),
 		widgets.Col(widgets.St{Gap: 0, Width: -1}, widgets.SectionLabel(tr("Personalization")), widgets.Group(
 			widgets.ListRow("s/instructions", "pen-line", "#f59e0b", tr("Custom instructions"), ifStr(a.settings.Instructions == "", tr("Not set"), tr("On")), nil, func() { a.navigate("settings/instructions") }),
+			widgets.ListRow("s/prompts", "square-terminal", "#a78bfa", tr("System prompts"), tr("How models are instructed"), nil, func() { a.navigate("settings/prompts") }),
+			widgets.ListRow("s/compression", "layers", "#38bdf8", tr("Context compression"), compressionSummary(a), nil, func() { a.navigate("settings/compression") }),
 			widgets.ListRow("s/memory", "brain", "#f59e0b", tr("Memory"), trn("{n} memories", len(a.st.All())), nil, func() { a.navigate("settings/memory") }),
 			widgets.ListRow("s/reasoning", "lightbulb", "#f59e0b", tr("Show thinking"), tr("Display reasoning from models that think"), widgets.Toggle("t/reasoning", a.settings.ShowReasoning, func(v bool) {
 				a.settings.ShowReasoning = v

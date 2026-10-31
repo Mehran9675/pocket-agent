@@ -1,10 +1,13 @@
-# Draws assets/appicon.png: an AI sparkle rising out of a stitched
-# pocket on an indigo-violet gradient - private AI in your pocket.
-# Drawn 4x larger and scaled down for smooth edges. The motif keeps to
-# the middle ~60% so launcher masks (One UI's squircle, Android
-# adaptive icons) never clip it.
-#   python3 scripts/appicon.py assets/appicon.png
+# Draws the app icon: a little robot agent peeking out of a denim
+# pocket, gripping its edge - Pocket Agent, literally. Writes
+#   assets/appicon.png              the full icon (iOS, older Android)
+#   assets/android-foreground.png   adaptive icon layers (Android 8+):
+#   assets/android-background.png     artwork in the middle 66 of 108dp
+#   assets/android-monochrome.png   the silhouette for themed icons
+# Drawn 4x larger and scaled down for smooth edges.
+#   python3 scripts/appicon.py [assets]
 import math
+import os
 import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -12,20 +15,18 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 OUT = 1024
 SS = 4
 N = OUT * SS
-C = N / 2
 
-BG_TOP = (99, 102, 241)       # indigo
-BG_BOTTOM = (139, 92, 246)    # violet
-POCKET = (250, 249, 255)
-POCKET_SHADE = (226, 224, 252)
-STITCH = (124, 112, 236)
-SPARK = (255, 209, 102)       # warm gold
-SPARK_CORE = (255, 244, 214)
-SHADOW = (40, 24, 110)
-
-
-def u(v):
-    return v * N
+BG_A = (255, 138, 92)         # coral
+BG_B = (255, 190, 92)         # amber
+DENIM = (58, 94, 168)
+DENIM_DARK = (40, 66, 128)
+STITCH = (255, 196, 110)
+RIVET = (214, 150, 84)
+ROBOT = (248, 248, 252)
+ROBOT_SHADE = (214, 218, 232)
+VISOR = (24, 30, 58)
+EYE = (110, 240, 255)
+SHADOW = (20, 24, 60)
 
 
 def gradient(a, b):
@@ -35,35 +36,23 @@ def gradient(a, b):
     return Image.composite(Image.new("RGB", (N, N), b), Image.new("RGB", (N, N), a), g)
 
 
-def sparkle(cx, cy, r, p=2.4, steps=720):
-    """A four-point star with concave sides."""
-    pts = []
-    for i in range(steps):
-        t = 2 * math.pi * i / steps
-        c, s = math.cos(t), math.sin(t)
-        pts.append((cx + r * math.copysign(abs(c) ** p, c), cy + r * math.copysign(abs(s) ** p, s)))
-    return pts
+def rrect(d, box, r, fill):
+    d.rounded_rectangle(box, radius=r, fill=fill)
 
 
-def pocket(cx, top, w, h, inset=0.0, steps=200):
-    """A jeans pocket: straight top, straight sides, curving to a soft
-    point at the bottom."""
-    w2 = w / 2 - inset
-    t = top + inset
-    side = top + h * 0.5
-    bottom = top + h - inset * 1.25
-    pts = [(cx - w2, t), (cx + w2, t), (cx + w2, side)]
-    # Right side to the bottom point, then mirrored.
+def pocket_shape(x0, top, w, h, steps=160):
+    """A jeans pocket: straight top and sides, curving to a soft point."""
+    cx, side, bottom = x0 + w / 2, top + h * 0.45, top + h
+    pts = [(x0, top), (x0 + w, top), (x0 + w, side)]
+    right = []
     for i in range(1, steps + 1):
         k = i / steps
-        x = cx + w2 * (1 - k) ** 1.15
-        y = side + (bottom - side) * math.sin(k * math.pi / 2) ** 0.9
-        pts.append((x, y))
-    left = [(2 * cx - x, y) for x, y in reversed(pts[3:-1])]
-    return pts + left + [(cx - w2, side)]
+        right.append((cx + (w / 2) * (1 - k) ** 1.2, side + (bottom - side) * math.sin(k * math.pi / 2) ** 0.85))
+    left = [(2 * cx - x, y) for x, y in reversed(right[:-1])]
+    return pts + right + left + [(x0, side)]
 
 
-def dashed(draw, pts, dash, gap, width, fill):
+def dashed(d, pts, dash, gap, width, fill):
     """Strokes the open path pts with round-capped dashes."""
     dashes, cur, on, left = [], [pts[0]], True, dash
     for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
@@ -86,63 +75,153 @@ def dashed(draw, pts, dash, gap, width, fill):
         dashes.append(cur)
     r = width / 2
     for ds in dashes:
-        draw.line(ds, fill=fill, width=width, joint="curve")
+        d.line(ds, fill=fill, width=width, joint="curve")
         for x, y in (ds[0], ds[-1]):
-            draw.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+            d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
 
 
-def main(path):
-    img = gradient(BG_TOP, BG_BOTTOM)
+def inset(pts, cx, cy, by):
+    """Shrinks a convex outline toward (cx, cy) by about by."""
+    out = []
+    for x, y in pts:
+        dx, dy = x - cx, y - cy
+        l = math.hypot(dx, dy) or 1
+        out.append((x - dx / l * by, y - dy / l * by))
+    return out
 
-    # Geometry, as fractions of the icon.
-    pw, ph = u(0.44), u(0.33)
-    ptop = u(0.48)
-    sr = u(0.19)
-    scx, scy = C, ptop - u(0.09)
 
-    # The sparkle sits behind the pocket, rising out of it, with a glow.
-    glow = Image.new("L", (N, N), 0)
-    ImageDraw.Draw(glow).polygon(sparkle(scx, scy, sr * 1.08), fill=150)
-    glow = glow.filter(ImageFilter.GaussianBlur(u(0.03)))
-    img = Image.composite(Image.new("RGB", (N, N), SPARK), img, glow)
+def layer():
+    return Image.new("RGBA", (N, N), (0, 0, 0, 0))
+
+
+def soft(mask, blur):
+    return mask.filter(ImageFilter.GaussianBlur(blur))
+
+
+def art(scale=1.0, mono=False):
+    """The robot and pocket on transparency. scale shrinks it about the
+    centre; mono draws a white silhouette with the face cut out."""
+    img = layer()
+    c = N / 2
+
+    def u(v):
+        return v * N * scale
+
+    def X(f):  # a horizontal position, as a fraction of the icon
+        return c + (f - 0.5) * N * scale
+
+    def Y(f):
+        return c + (f - 0.5) * N * scale
+
+    white = (255, 255, 255, 255)
     d = ImageDraw.Draw(img)
-    d.polygon(sparkle(scx, scy, sr), fill=SPARK)
-    d.polygon(sparkle(scx, scy, sr * 0.4, p=2.8), fill=SPARK_CORE)
-    # A small companion sparkle.
-    d.polygon(sparkle(C + u(0.17), u(0.24), u(0.055)), fill=SPARK_CORE)
 
-    # The pocket's soft shadow, then the pocket.
-    outline = pocket(C, ptop, pw, ph)
-    shadow = Image.new("L", (N, N), 0)
-    ImageDraw.Draw(shadow).polygon([(x, y + u(0.018)) for x, y in outline], fill=120)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(u(0.025)))
-    img = Image.composite(Image.new("RGB", (N, N), SHADOW), img, shadow)
+    # Antenna.
+    ax, atop = X(0.5), Y(0.175)
+    d.line([(ax, atop), (ax, Y(0.27))], fill=white if mono else ROBOT_SHADE + (255,), width=int(u(0.016)))
+    if not mono:
+        glow = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(glow).ellipse([ax - u(0.05), atop - u(0.05), ax + u(0.05), atop + u(0.05)], fill=170)
+        img = Image.composite(Image.new("RGBA", (N, N), EYE + (255,)), img, soft(glow, u(0.02)))
+        d = ImageDraw.Draw(img)
+    d.ellipse([ax - u(0.03), atop - u(0.03), ax + u(0.03), atop + u(0.03)], fill=white if mono else EYE + (255,))
 
-    mask = Image.new("L", (N, N), 0)
-    ImageDraw.Draw(mask).polygon(outline, fill=255)
-    # Rounded top corners.
-    r = u(0.03)
-    md = ImageDraw.Draw(mask)
-    for sx in (-1, 1):
-        x = C + sx * pw / 2
-        md.rectangle([min(x, x - sx * r), ptop, max(x, x - sx * r), ptop + r], fill=0)
-        md.ellipse([x - sx * r - r, ptop, x - sx * r + r, ptop + 2 * r], fill=255)
-    body = gradient(POCKET, POCKET_SHADE)
-    img = Image.composite(body, img, mask)
+    # Head: its bottom is hidden by the pocket.
+    hx0, hx1, hy0, hy1 = X(0.30), X(0.70), Y(0.255), Y(0.62)
+    rrect(d, [hx0, hy0, hx1, hy1], u(0.09), white if mono else ROBOT + (255,))
+    if not mono:
+        # A little shading down the right side.
+        shade = Image.new("L", (N, N), 0)
+        sd = ImageDraw.Draw(shade)
+        sd.rounded_rectangle([hx0, hy0, hx1, hy1], radius=u(0.09), fill=255)
+        cut = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(cut).rounded_rectangle([hx0 - u(0.03), hy0 - u(0.03), hx1 - u(0.035), hy1], radius=u(0.1), fill=255)
+        shade = ImageChops.subtract(shade, cut)
+        img = Image.composite(Image.new("RGBA", (N, N), ROBOT_SHADE + (255,)), img, soft(shade, u(0.006)))
+        d = ImageDraw.Draw(img)
 
-    # Stitching: a hem across the top and a seam inset along the sides
-    # and bottom.
-    d = ImageDraw.Draw(img)
-    sw = int(u(0.009))
-    hem = ptop + u(0.07)
-    dashed(d, [(C - pw / 2 + u(0.045), hem), (C + pw / 2 - u(0.045), hem)], u(0.03), u(0.02), sw, STITCH)
-    seam = pocket(C, ptop, pw, ph, inset=u(0.04))
-    open_seam = seam[1:] + [seam[0]]
-    open_seam = [(x, max(y, hem + u(0.04))) for x, y in open_seam]
-    dashed(d, open_seam, u(0.03), u(0.02), sw, STITCH)
+    # Visor and eyes, looking up at you.
+    vx0, vx1, vy0, vy1 = X(0.345), X(0.655), Y(0.315), Y(0.465)
+    if mono:
+        cutout = Image.new("L", (N, N), 0)
+        cd = ImageDraw.Draw(cutout)
+        for ex in (0.43, 0.57):
+            cd.rounded_rectangle([X(ex - 0.03), Y(0.35), X(ex + 0.03), Y(0.43)], radius=u(0.03), fill=255)
+        img.putalpha(ImageChops.subtract(img.getchannel("A"), cutout))
+        d = ImageDraw.Draw(img)
+    else:
+        rrect(d, [vx0, vy0, vx1, vy1], u(0.06), VISOR + (255,))
+        glow = Image.new("L", (N, N), 0)
+        gd = ImageDraw.Draw(glow)
+        for ex in (0.43, 0.57):
+            gd.rounded_rectangle([X(ex - 0.04), Y(0.34), X(ex + 0.04), Y(0.44)], radius=u(0.04), fill=200)
+        glow = ImageChops.multiply(soft(glow, u(0.018)), Image.new("L", (N, N), 255))
+        vmask = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(vmask).rounded_rectangle([vx0, vy0, vx1, vy1], radius=u(0.06), fill=255)
+        img = Image.composite(Image.new("RGBA", (N, N), EYE + (255,)), img, ImageChops.multiply(glow, vmask))
+        d = ImageDraw.Draw(img)
+        for ex in (0.43, 0.57):
+            rrect(d, [X(ex - 0.026), Y(0.352), X(ex + 0.026), Y(0.428)], u(0.026), EYE + (255,))
+            d.ellipse([X(ex - 0.012), Y(0.36), X(ex + 0.002), Y(0.374)], fill=(235, 255, 255, 255))
 
-    img.resize((OUT, OUT), Image.LANCZOS).save(path)
+    # The pocket, in front, with its shadow on the head.
+    px0, pw, ptop, ph = X(0.22), u(0.56), Y(0.52), u(0.31)
+    outline = pocket_shape(px0, ptop, pw, ph)
+    if not mono:
+        sh = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(sh).polygon([(x, y - u(0.012)) for x, y in outline], fill=150)
+        sh = ImageChops.multiply(soft(sh, u(0.02)), img.getchannel("A"))
+        img = Image.composite(Image.new("RGBA", (N, N), SHADOW + (255,)), img, sh)
+    pm = Image.new("L", (N, N), 0)
+    ImageDraw.Draw(pm).polygon(outline, fill=255)
+    if mono:
+        img = Image.composite(Image.new("RGBA", (N, N), white), img, pm)
+        # A gap between head and pocket keeps them apart in the silhouette.
+        gap = Image.new("L", (N, N), 0)
+        ImageDraw.Draw(gap).line([(px0, ptop - u(0.006)), (px0 + pw, ptop - u(0.006))], fill=255, width=int(u(0.016)))
+        img.putalpha(ImageChops.subtract(img.getchannel("A"), gap))
+    else:
+        body = gradient(DENIM, DENIM_DARK).convert("RGBA")
+        img = Image.composite(body, img, pm)
+        d = ImageDraw.Draw(img)
+        # Hem band, stitching and rivets.
+        hem = ptop + u(0.06)
+        d.line([(px0, hem), (px0 + pw, hem)], fill=DENIM_DARK + (255,), width=int(u(0.006)))
+        sw = int(u(0.009))
+        dashed(d, [(px0 + u(0.035), ptop + u(0.03)), (px0 + pw - u(0.035), ptop + u(0.03))], u(0.026), u(0.018), sw, STITCH + (255,))
+        cx = px0 + pw / 2
+        seam = inset(outline[2:-1], cx, ptop + ph * 0.35, u(0.04))
+        seam = [(x, y) for x, y in seam if y > hem + u(0.03)]
+        dashed(d, seam, u(0.026), u(0.018), sw, STITCH + (255,))
+        for rx in (px0 + u(0.035), px0 + pw - u(0.035)):
+            d.ellipse([rx - u(0.017), hem + u(0.02) - u(0.017), rx + u(0.017), hem + u(0.02) + u(0.017)], fill=RIVET + (255,))
+
+    # Hands gripping the pocket's edge.
+    for hx in (0.33, 0.67):
+        x0, x1 = X(hx - 0.06), X(hx + 0.06)
+        y0, y1 = Y(0.495), Y(0.565)
+        rrect(d, [x0, y0, x1, y1], u(0.035), white if mono else ROBOT + (255,))
+        if not mono:
+            for f in (-1, 0, 1):
+                fx = X(hx + f * 0.028)
+                d.line([(fx, Y(0.548)), (fx, Y(0.565))], fill=ROBOT_SHADE + (255,), width=int(u(0.006)))
+    return img
+
+
+def down(img):
+    return img.resize((OUT, OUT), Image.LANCZOS)
+
+
+def main(dirpath):
+    bg = gradient(BG_A, BG_B).convert("RGBA")
+    full = Image.alpha_composite(bg, art())
+    down(full).convert("RGB").save(os.path.join(dirpath, "appicon.png"))
+    # Adaptive icons keep the middle 66 of 108dp safe: 0.61 of the
+    # canvas. The artwork spans 0.69 of the icon, so it shrinks.
+    down(art(scale=0.84)).save(os.path.join(dirpath, "android-foreground.png"))
+    down(bg).convert("RGB").save(os.path.join(dirpath, "android-background.png"))
+    down(art(scale=0.84, mono=True)).save(os.path.join(dirpath, "android-monochrome.png"))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "assets/appicon.png")
+    main(sys.argv[1] if len(sys.argv) > 1 else "assets")
